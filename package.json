@@ -1,0 +1,9 @@
+{
+  "name": "neoexamshield-web",
+  "version": "1.0.0",
+  "description": "Web Portal and Cloud Key Manager for NeoExamShield",
+  "private": true,
+  "dependencies": {
+    "@vercel/kv": "^3.0.0"
+  }
+}

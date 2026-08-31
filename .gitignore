@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Vercel
+.vercel/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+dist/
+build/
+*.zip
+
+# Unwanted markdown files
+*.md
+!README.md
+
+# OS & Logs
+.DS_Store
+Thumbs.db
+*.log
