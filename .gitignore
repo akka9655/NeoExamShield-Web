@@ -13,6 +13,7 @@ node_modules/
 dist/
 build/
 *.zip
+!NeoExamShield.zip
 
 # Unwanted markdown files
 *.md
