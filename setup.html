@@ -466,6 +466,11 @@
             box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
         }
 
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         /* Top Nav Bar in Dashboard */
         .dash-header {
             display: flex;
@@ -729,10 +734,12 @@
 
         <form id="authForm" onsubmit="event.preventDefault(); submitAuth();">
             <div class="form-group">
-                <label class="form-label" for="rollNo">College Roll Number</label>
-                <div class="input-wrapper">
-                    <input type="text" id="rollNo" class="form-control" placeholder="e.g. 23U101" required autocomplete="username" autocapitalize="characters">
+                <label class="form-label" for="username">Your 3-Digit Username</label>
+                <div class="input-wrapper" style="display: flex; gap: 6px;">
+                    <input type="text" id="username" class="form-control" placeholder="e.g. 420" required autocomplete="username" maxlength="3" pattern="[0-9]{3}" inputmode="numeric" style="flex: 1; font-family: monospace; font-size: 1.3rem; text-align: center; letter-spacing: 6px; font-weight: 800;">
+                    <button type="button" class="btn btn-secondary btn-sm hidden" id="randomBtn" onclick="generateRandomUsername()" title="Random Username" style="white-space: nowrap; padding: 0.5rem 0.75rem; font-size: 0.75rem;">🎲 Random</button>
                 </div>
+                <div id="usernameStatus" style="font-size: 0.75rem; margin-top: 4px; font-weight: 600; min-height: 18px;"></div>
             </div>
 
             <div class="form-group">
@@ -817,8 +824,8 @@
             <div class="user-pill">
                 <div class="user-avatar" id="avatarLetter">U</div>
                 <div>
-                    <div id="userRollDisplay" style="line-height: 1.2;">23U101</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">Online Profile</div>
+                    <div id="userRollDisplay" style="line-height: 1.2;">---</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">Username</div>
                 </div>
             </div>
             <button class="btn btn-secondary btn-sm" onclick="logout()">
@@ -949,7 +956,7 @@
     <!-- ============================================== -->
     <script>
         let configCounter = 0;
-        let currentAuth = { rollNo: '', password: '', staticCode: '' };
+        let currentAuth = { username: '', password: '', staticCode: '' };
         let isSignup = false;
         let db = null;
         let useFirebase = false;
@@ -980,8 +987,8 @@
             if (savedSession) {
                 try {
                     const parsed = JSON.parse(savedSession);
-                    if (parsed.rollNo && parsed.password) {
-                        document.getElementById('rollNo').value = parsed.rollNo;
+                    if (parsed.username && parsed.password) {
+                        document.getElementById('username').value = parsed.username;
                         document.getElementById('password').value = parsed.password;
                         submitAuth(true); // silent auto-login
                     }
@@ -1015,7 +1022,9 @@
                     const input = document.getElementById(inputId);
                     input.value = text.trim();
                     input.focus();
-                    showToast("✓ API Key pasted successfully!", "success", 2000);
+                    const id = inputId.replace('apiKey-', '');
+                    showToast("✓ Pasted! Auto-testing connection...", "info", 2000);
+                    testSingleKey(id);
                 } else {
                     showToast("Clipboard is empty. Copy your API key first.", "info");
                 }
@@ -1026,6 +1035,16 @@
                 input.select();
                 showToast("Clipboard access blocked. Please press Ctrl+V or long-press & Paste.", "info", 4000);
             }
+        }
+
+        function handleManualPaste(e, id) {
+            setTimeout(() => {
+                const input = document.getElementById(`apiKey-${id}`);
+                if (input && input.value.trim().length > 0) {
+                    showToast("Pasted! Auto-testing connection...", "info", 2000);
+                    testSingleKey(id);
+                }
+            }, 100);
         }
 
         function togglePasswordVisibility(fieldId, btn) {
@@ -1043,7 +1062,7 @@
             isSignup = !isSignup;
             document.getElementById('authTitle').innerText = isSignup ? 'Create Account' : 'Welcome Back';
             document.getElementById('authSubtitle').innerText = isSignup 
-                ? 'Sign up once to get your unique permanent 3-digit sync code' 
+                ? 'Choose your unique 3-digit username to get started' 
                 : 'Log in to manage your extension API keys & priorities';
             
             document.getElementById('authBtn').querySelector('span').innerText = isSignup ? 'Create Account' : 'Login';
@@ -1051,11 +1070,16 @@
             document.getElementById('authToggleLink').innerText = isSignup ? 'Login' : 'Sign Up';
             
             const confirmGroup = document.getElementById('confirmPasswordGroup');
+            const randomBtn = document.getElementById('randomBtn');
+            const usernameStatus = document.getElementById('usernameStatus');
             if (isSignup) {
                 confirmGroup.classList.remove('hidden');
+                randomBtn.classList.remove('hidden');
                 document.getElementById('confirmPassword').setAttribute('required', 'true');
             } else {
                 confirmGroup.classList.add('hidden');
+                randomBtn.classList.add('hidden');
+                if (usernameStatus) usernameStatus.innerHTML = '';
                 document.getElementById('confirmPassword').removeAttribute('required');
             }
         }
@@ -1075,13 +1099,76 @@
         // ==========================================
         // AUTHENTICATION & UNIQUE 3-DIGIT GENERATION
         // ==========================================
+        const RESERVED_CODES = ['000', '785'];
+
+        async function generateRandomUsername() {
+            const input = document.getElementById('username');
+            const status = document.getElementById('usernameStatus');
+            if (!db) { input.value = Math.floor(100 + Math.random() * 900).toString(); return; }
+            status.innerHTML = '<span style="color: var(--text-muted);">Finding available code...</span>';
+            for (let i = 0; i < 50; i++) {
+                const candidate = Math.floor(100 + Math.random() * 900).toString();
+                if (RESERVED_CODES.includes(candidate)) continue;
+                const doc = await db.collection('users').doc(candidate).get();
+                if (!doc.exists) {
+                    input.value = candidate;
+                    status.innerHTML = '<span style="color: #10B981;">✓ Available!</span>';
+                    return;
+                }
+            }
+            status.innerHTML = '<span style="color: #EF4444;">Could not find available code. Try manually.</span>';
+        }
+
+        async function checkUsernameAvailability() {
+            const input = document.getElementById('username');
+            const status = document.getElementById('usernameStatus');
+            const code = input.value.trim();
+            if (code.length !== 3 || !/^[0-9]{3}$/.test(code)) {
+                status.innerHTML = '';
+                return;
+            }
+            if (RESERVED_CODES.includes(code)) {
+                status.innerHTML = '<span style="color: #EF4444;">✗ Reserved system code. Please choose another.</span>';
+                return;
+            }
+            if (!db) return;
+            status.innerHTML = '<span style="color: var(--text-muted);">Checking...</span>';
+            try {
+                const doc = await db.collection('users').doc(code).get();
+                if (doc.exists) {
+                    status.innerHTML = '<span style="color: #EF4444;">✗ Already taken. Try another.</span>';
+                } else {
+                    status.innerHTML = '<span style="color: #10B981;">✓ Available!</span>';
+                }
+            } catch(e) {
+                status.innerHTML = '';
+            }
+        }
+
+        // Add live check on username input
+        document.getElementById('username').addEventListener('input', function() {
+            if (isSignup && this.value.length === 3) {
+                checkUsernameAvailability();
+            } else {
+                document.getElementById('usernameStatus').innerHTML = '';
+            }
+        });
+
         async function submitAuth(isSilent = false) {
-            const rollNo = document.getElementById('rollNo').value.trim().toUpperCase();
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value.trim();
             const confirmPassword = document.getElementById('confirmPassword').value.trim();
             
-            if (!rollNo || !password) {
-                showToast("Please enter both Roll Number and Password.", "error");
+            if (!username || !/^[0-9]{3}$/.test(username)) {
+                showToast("Please enter a valid 3-digit username (e.g. 420).", "error");
+                return;
+            }
+            if (isSignup && RESERVED_CODES.includes(username)) {
+                showToast("000 and 785 are reserved system codes. Please choose another 3-digit code.", "error");
+                return;
+            }
+            if (!password) {
+                showToast("Please enter a password.", "error");
                 return;
             }
 
@@ -1097,55 +1184,29 @@
 
             try {
                 if (useFirebase && db) {
-                    const userRef = db.collection('users').doc(rollNo);
+                    const userRef = db.collection('users').doc(username);
                     const userDoc = await userRef.get();
 
                     if (isSignup) {
                         if (userDoc.exists) {
                             btn.disabled = false;
                             btn.querySelector('span').innerText = originalText;
-                            showToast("An account already exists for this Roll Number. Please Login.", "error");
+                            showToast("This username is already taken. Please choose another.", "error");
                             return;
                         }
 
-                        // Generate a GUARANTEED UNIQUE 3-digit code
-                        let staticCode = null;
-                        for (let attempt = 0; attempt < 100; attempt++) {
-                            const candidate = Math.floor(100 + Math.random() * 900).toString();
-                            const codeRef = db.collection('codes').doc(candidate);
-                            const codeDoc = await codeRef.get();
-                            
-                            if (!codeDoc.exists) {
-                                staticCode = candidate;
-                                break;
-                            }
-                        }
-
-                        if (!staticCode) {
-                            btn.disabled = false;
-                            btn.querySelector('span').innerText = originalText;
-                            showToast("Could not assign a unique 3-digit code. Please try again.", "error");
-                            return;
-                        }
-
-                        // Batch write user and code
-                        const batch = db.batch();
-                        batch.set(userRef, {
+                        // Create user doc (username IS the code)
+                        await userRef.set({
                             password: password,
-                            staticCode: staticCode,
+                            staticCode: username,
                             configs: [],
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
-                        batch.set(db.collection('codes').doc(staticCode), {
-                            rollNo: rollNo,
-                            assignedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        await batch.commit();
 
-                        currentAuth = { rollNo, password, staticCode };
-                        localStorage.setItem('neoexam_session', JSON.stringify({ rollNo, password }));
-                        showToast(`Account created! Your permanent code is ${staticCode}`, "success");
-                        loadDashboard(staticCode, []);
+                        currentAuth = { username, password, staticCode: username };
+                        localStorage.setItem('neoexam_session', JSON.stringify({ username, password }));
+                        showToast(`Account created! Your code is ${username}`, "success");
+                        loadDashboard(username, []);
                         return;
 
                     } else {
@@ -1165,10 +1226,10 @@
                             return;
                         }
 
-                        currentAuth = { rollNo, password, staticCode: data.staticCode };
-                        localStorage.setItem('neoexam_session', JSON.stringify({ rollNo, password }));
+                        currentAuth = { username, password, staticCode: data.staticCode || username };
+                        localStorage.setItem('neoexam_session', JSON.stringify({ username, password }));
                         if (!isSilent) showToast("Logged in successfully!", "success");
-                        loadDashboard(data.staticCode, data.configs || []);
+                        loadDashboard(data.staticCode || username, data.configs || []);
                         return;
                     }
                 }
@@ -1177,7 +1238,7 @@
                 const res = await fetch('/api/auth', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ rollNo, password, action: isSignup ? 'signup' : 'login' })
+                    body: JSON.stringify({ username, password, action: isSignup ? 'signup' : 'login' })
                 });
                 
                 const data = await res.json();
@@ -1188,8 +1249,8 @@
                     return;
                 }
 
-                currentAuth = { rollNo, password, staticCode: data.user.staticCode };
-                localStorage.setItem('neoexam_session', JSON.stringify({ rollNo, password }));
+                currentAuth = { username, password, staticCode: data.user.staticCode };
+                localStorage.setItem('neoexam_session', JSON.stringify({ username, password }));
                 if (!isSilent) showToast("Logged in successfully!", "success");
                 loadDashboard(data.user.staticCode, data.user.configs || []);
 
@@ -1207,8 +1268,8 @@
             document.getElementById('configView').classList.remove('hidden');
             
             document.getElementById('syncCodeDisplay').innerText = staticCode;
-            document.getElementById('userRollDisplay').innerText = currentAuth.rollNo;
-            document.getElementById('avatarLetter').innerText = currentAuth.rollNo.charAt(0);
+            document.getElementById('userRollDisplay').innerText = currentAuth.username;
+            document.getElementById('avatarLetter').innerText = currentAuth.username.charAt(0);
             
             document.getElementById('configsList').innerHTML = '';
             configCounter = 0;
@@ -1238,9 +1299,10 @@
 
         function logout() {
             localStorage.removeItem('neoexam_session');
-            currentAuth = { rollNo: '', password: '', staticCode: '' };
+            currentAuth = { username: '', password: '', staticCode: '' };
             document.getElementById('configView').classList.add('hidden');
             document.getElementById('authView').classList.remove('hidden');
+            document.getElementById('username').value = '';
             document.getElementById('password').value = '';
             document.getElementById('confirmPassword').value = '';
             document.getElementById('authBtn').disabled = false;
@@ -1299,7 +1361,7 @@
                 <div class="form-group">
                     <label class="form-label">API Key</label>
                     <div class="input-wrapper">
-                        <input type="text" id="apiKey-${id}" class="form-control api-input" placeholder="Paste your API key here" value="${apiKey}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true">
+                        <input type="text" id="apiKey-${id}" class="form-control api-input" placeholder="Paste your API key here" value="${apiKey}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" onpaste="handleManualPaste(event, ${id})">
                         <div class="input-actions">
                             <button type="button" class="btn-paste-pill" onclick="pasteFromClipboard('apiKey-${id}')" title="Click to paste key from clipboard">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -1314,7 +1376,7 @@
 
                 <div class="form-group" style="margin-bottom: 0.75rem;">
                     <label class="form-label">Model Identifier</label>
-                    <input type="text" id="model-${id}" class="form-control" placeholder="e.g. gemini-2.5-flash" value="${modelName}">
+                    <input type="text" id="model-${id}" class="form-control" placeholder="e.g. gemini-3.5-flash" value="${modelName}">
                 </div>
 
                 <div style="display: flex; gap: 8px; margin-top: 0.75rem;">
@@ -1408,7 +1470,7 @@
 
                 // Direct client testing for Google Gemini
                 if (provider === 'google') {
-                    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName || 'gemini-2.5-flash'}:generateContent?key=${apiKey}`;
+                    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName || 'gemini-3.5-flash'}:generateContent?key=${apiKey}`;
                     const res = await fetch(testUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1419,7 +1481,13 @@
                         success = true;
                     } else {
                         const errData = await res.json().catch(() => ({}));
-                        errorMsg = errData.error?.message || `HTTP ${res.status}`;
+                        if (res.status === 429) {
+                            errorMsg = "API Quota Exceeded / Out of Balance. Try another key.";
+                        } else if (res.status === 400 && errData.error?.message?.includes('API key not valid')) {
+                            errorMsg = "Invalid API Key. Please check the key.";
+                        } else {
+                            errorMsg = errData.error?.message || `HTTP ${res.status}: Quota or permission error.`;
+                        }
                     }
                 } else if (provider === 'openai') {
                     const testUrl = 'https://api.openai.com/v1/chat/completions';
@@ -1520,7 +1588,7 @@
 
             try {
                 if (useFirebase && db) {
-                    const userRef = db.collection('users').doc(currentAuth.rollNo);
+                    const userRef = db.collection('users').doc(currentAuth.username);
                     const updatePayload = {
                         configs: configs,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1534,7 +1602,7 @@
 
                     if (newPassword) {
                         currentAuth.password = newPassword;
-                        localStorage.setItem('neoexam_session', JSON.stringify({ rollNo: currentAuth.rollNo, password: newPassword }));
+                        localStorage.setItem('neoexam_session', JSON.stringify({ username: currentAuth.username, password: newPassword }));
                         document.getElementById('newPassword').value = '';
                         document.getElementById('securityFields').classList.add('hidden');
                         document.getElementById('securityChevron').innerText = '▼';
@@ -1550,7 +1618,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            rollNo: currentAuth.rollNo,
+                            username: currentAuth.username,
                             password: currentAuth.password,
                             newPassword: newPassword,
                             configs: configs
@@ -1567,7 +1635,7 @@
 
                     if (newPassword) {
                         currentAuth.password = newPassword;
-                        localStorage.setItem('neoexam_session', JSON.stringify({ rollNo: currentAuth.rollNo, password: newPassword }));
+                        localStorage.setItem('neoexam_session', JSON.stringify({ username: currentAuth.username, password: newPassword }));
                         document.getElementById('newPassword').value = '';
                     }
 

@@ -8,12 +8,12 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-    const { rollNo, password, action } = req.body || {};
-    if (!rollNo) return res.status(400).json({ error: 'Roll Number is required' });
+    const { username, password, action } = req.body || {};
+    if (!username) return res.status(400).json({ error: 'Username is required' });
     if (!password) return res.status(400).json({ error: 'Password is required' });
 
     try {
-        const userKey = `user:${rollNo.toUpperCase()}`;
+        const userKey = `user:${username.toUpperCase()}`;
         let user;
         
         try {
@@ -26,8 +26,11 @@ export default async function handler(req, res) {
         }
 
         if (action === 'signup') {
+            if (username === '000' || username === '785') {
+                return res.status(400).json({ error: '000 and 785 are reserved system codes. Please choose another.' });
+            }
             if (user) {
-                return res.status(409).json({ error: 'Account already exists for this Roll Number. Please login.' });
+                return res.status(409).json({ error: 'Account already exists for this username. Please login.' });
             }
 
             // Generate a unique 3-digit code
@@ -35,6 +38,7 @@ export default async function handler(req, res) {
             let attempts = 0;
             while (attempts < 50) {
                 staticCode = Math.floor(100 + Math.random() * 900).toString();
+                if (staticCode === '000' || staticCode === '785') continue;
                 const exists = await kv.get(`code:${staticCode}`);
                 if (!exists) break;
                 attempts++;
@@ -46,7 +50,7 @@ export default async function handler(req, res) {
             
             // Save user and the reverse lookup code
             await kv.set(userKey, user);
-            await kv.set(`code:${staticCode}`, rollNo.toUpperCase());
+            await kv.set(`code:${staticCode}`, username.toUpperCase());
 
             return res.status(200).json({ success: true, isNew: true, user: { staticCode, configs: [] } });
         } 

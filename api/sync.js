@@ -12,9 +12,9 @@ export default async function handler(req, res) {
     if (!code || code.length !== 3) return res.status(400).json({ error: 'Valid 3-digit code required' });
 
     try {
-        let rollNo;
+        let username;
         try {
-            rollNo = await kv.get(`code:${code}`);
+            username = await kv.get(`code:${code}`);
         } catch (kvErr) {
             console.warn('Vercel KV warning:', kvErr.message);
             return res.status(500).json({ 
@@ -22,12 +22,12 @@ export default async function handler(req, res) {
             });
         }
 
-        if (!rollNo) {
+        if (!username) {
             return res.status(404).json({ error: 'Invalid or unregistered code' });
         }
 
         // Fetch the user's configurations
-        const user = await kv.get(`user:${rollNo}`);
+        const user = await kv.get(`user:${username}`);
         
         if (!user || !user.configs || user.configs.length === 0) {
             return res.status(404).json({ error: 'No API keys configured for this code' });
