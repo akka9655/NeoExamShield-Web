@@ -2,10 +2,12 @@
   "version": 2,
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    { "source": "/d", "destination": "/NeoExamShield.zip", "permanent": false },
+    { "source": "/d/", "destination": "/NeoExamShield.zip", "permanent": false },
+    { "source": "/download", "destination": "/NeoExamShield.zip", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/d", "destination": "/d.html" },
-    { "source": "/d/", "destination": "/d.html" },
-    { "source": "/download", "destination": "/d.html" },
     { "source": "/setup", "destination": "/setup.html" },
     { "source": "/login", "destination": "/index.html" },
     { "source": "/", "destination": "/index.html" }
