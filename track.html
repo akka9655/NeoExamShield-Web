@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NeoExamShield - Candidate Live Session Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #1686FF;
+            --primary-dark: #0066d6;
+            --primary-light: #e8f3ff;
+            --primary-glow: rgba(22, 134, 255, 0.2);
+            --bg: #F4F7FB;
+            --surface: #FFFFFF;
+            --surface-subtle: #F8FAFC;
+            --border: #E2E8F0;
+            --border-subtle: #EDF2F7;
+            --text: #0F172A;
+            --text-muted: #64748B;
+            --text-light: #94A3B8;
+            --success: #10B981;
+            --success-bg: #ECFDF5;
+            --warning: #F59E0B;
+            --warning-bg: #FFFBEB;
+            --danger: #EF4444;
+            --danger-bg: #FEF2F2;
+            --purple: #8B5CF6;
+            --purple-bg: #F5F3FF;
+            --radius-sm: 8px;
+            --radius: 14px;
+            --radius-lg: 20px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.06);
+            --shadow-lg: 0 16px 36px -6px rgba(15, 23, 42, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Ambient Glow Backgrounds */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -120px;
+            left: -100px;
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(22, 134, 255, 0.07) 0%, rgba(244, 247, 251, 0) 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -100px;
+            right: -100px;
+            width: 480px;
+            height: 480px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, rgba(244, 247, 251, 0) 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .layout-wrapper {
+            max-width: 1360px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.5rem 1.25rem 3rem;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Top Navigation Bar */
+        .top-navbar {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: var(--radius);
+            padding: 0.9rem 1.4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .brand-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #1686FF 0%, #0056b3 100%);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(22, 134, 255, 0.35);
+        }
+
+        .brand-title {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-title h1 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .brand-title p {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .live-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.74rem;
+            font-weight: 600;
+            background: var(--success-bg);
+            color: #065f46;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-ring 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            padding: 0.55rem 0.95rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.825rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(22, 134, 255, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-subtle);
+            border-color: #CBD5E1;
+            transform: translateY(-1px);
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.7rem;
+            font-size: 0.76rem;
+            border-radius: 6px;
+        }
+
+        /* Metric Analytics Cards */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .metric-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.4rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .metric-icon-wrap {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .metric-blue { background: var(--primary-light); color: var(--primary); }
+        .metric-green { background: var(--success-bg); color: var(--success); }
+        .metric-purple { background: var(--purple-bg); color: var(--purple); }
+        .metric-amber { background: var(--warning-bg); color: var(--warning); }
+
+        .metric-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1.1;
+        }
+
+        .metric-label {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        /* Control & Filter Panel */
+        .controls-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.1rem 1.4rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+
+        .controls-top {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-box-wrap {
+            flex: 1 1 300px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            height: 42px;
+            background: var(--surface-subtle);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0 1rem 0 2.5rem;
+            font-size: 0.86rem;
+            color: var(--text);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            background: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            pointer-events: none;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        .custom-select {
+            height: 42px;
+            background: var(--surface-subtle);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0 0.85rem;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text);
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        .custom-select:focus {
+            border-color: var(--primary);
+        }
+
+        .export-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Sessions Table Container */
+        .table-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-header-bar {
+            padding: 1rem 1.4rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+        }
+
+        .table-title-area h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .table-title-area span {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.84rem;
+        }
+
+        thead {
+            background: var(--surface-subtle);
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            padding: 0.85rem 1.25rem;
+            font-size: 0.74rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border-subtle);
+            transition: background-color 0.15s ease;
+        }
+
+        tbody tr:hover {
+            background-color: #F8FAFD;
+        }
+
+        td {
+            padding: 1rem 1.25rem;
+            vertical-align: middle;
+            color: var(--text);
+        }
+
+        /* Cell Styling */
+        .student-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .student-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1686FF 0%, #0056b3 100%);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(22, 134, 255, 0.2);
+        }
+
+        .student-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .student-name {
+            font-weight: 700;
+            color: var(--text);
+            font-size: 0.88rem;
+        }
+
+        .student-roll {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.76rem;
+            color: var(--primary);
+            background: var(--primary-light);
+            padding: 1px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            width: fit-content;
+        }
+
+        .degree-text {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: #334155;
+            max-width: 260px;
+            white-space: normal;
+            line-height: 1.35;
+        }
+
+        .batch-chip {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.76rem;
+            background: #F1F5F9;
+            color: #475569;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .test-chip {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #1E293B;
+            max-width: 240px;
+            white-space: normal;
+            line-height: 1.3;
+        }
+
+        .code-chip {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+            font-size: 0.88rem;
+            padding: 4px 10px;
+            border-radius: 8px;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .code-000 {
+            background: #ECFDF5;
+            color: #047857;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+
+        .code-785 {
+            background: #F5F3FF;
+            color: #6D28D9;
+            border: 1px solid rgba(139, 92, 246, 0.35);
+        }
+
+        .code-custom {
+            background: #EFF6FF;
+            color: #1D4ED8;
+            border: 1px solid rgba(29, 78, 216, 0.3);
+        }
+
+        .time-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .time-full {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #334155;
+            white-space: nowrap;
+        }
+
+        .time-ago {
+            font-size: 0.72rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 8px;
+            border-radius: 9999px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            background: var(--success-bg);
+            color: #065f46;
+        }
+
+        .row-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .action-icon-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #ffffff;
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .action-icon-btn:hover {
+            background: var(--surface-subtle);
+            color: var(--primary);
+            border-color: #CBD5E1;
+        }
+
+        .action-icon-btn.btn-danger:hover {
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.4);
+            background: var(--danger-bg);
+        }
+
+        /* Empty & Loading States */
+        .empty-state {
+            padding: 3.5rem 1.5rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state svg {
+            color: #CBD5E1;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .empty-state p {
+            font-size: 0.85rem;
+            max-width: 440px;
+            line-height: 1.5;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            background: #0F172A;
+            color: #FFFFFF;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            font-size: 0.84rem;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideInToast 0.25s ease forwards;
+        }
+
+        @keyframes slideInToast {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Detail Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 580px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: modalPop 0.2s ease forwards;
+        }
+
+        @keyframes modalPop {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface-subtle);
+        }
+
+        .modal-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 4px;
+            line-height: 1;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .detail-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            width: 140px;
+            flex-shrink: 0;
+        }
+
+        .detail-value {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            background: var(--surface-subtle);
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 900px) {
+            .controls-top {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-group {
+                justify-content: stretch;
+            }
+            .custom-select {
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .layout-wrapper {
+                padding: 1rem 0.65rem 2rem;
+            }
+            .top-navbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+                padding: 1rem;
+            }
+            .nav-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .metric-card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="layout-wrapper">
+        <!-- Top Navigation -->
+        <header class="top-navbar">
+            <div class="brand-section">
+                <div class="brand-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <circle cx="12" cy="11" r="3"/>
+                    </svg>
+                </div>
+                <div class="brand-title">
+                    <h1>NeoExamShield Tracker</h1>
+                    <p>Live Candidate Exam Sessions & Telemetry</p>
+                </div>
+            </div>
+
+            <div class="nav-actions">
+                <div class="live-status-pill" id="liveStatusBadge">
+                    <span class="live-dot"></span>
+                    <span id="liveStatusText">Live Sync Active</span>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="refreshBtn" onclick="manualRefresh()" title="Refresh telemetry">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                    <span>Refresh</span>
+                </button>
+                <a href="setup.html" class="btn btn-secondary btn-sm" title="Configure API Keys">⚙️ Setup</a>
+                <a href="index.html" class="btn btn-primary btn-sm" title="Portal Login">Portal</a>
+            </div>
+        </header>
+
+        <!-- Metrics Overview -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon-wrap metric-blue">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
+                <div class="metric-details">
+                    <span class="metric-value" id="totalSessionsCount">0</span>
+                    <span class="metric-label">Total Exam Sessions</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon-wrap metric-green">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                        <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                    </svg>
+                </div>
+                <div class="metric-details">
+                    <span class="metric-value" id="uniqueStudentsCount">0</span>
+                    <span class="metric-label">Unique Students</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon-wrap metric-purple">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </div>
+                <div class="metric-details">
+                    <span class="metric-value" id="activeTestsCount">0</span>
+                    <span class="metric-label">Tests Logged</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon-wrap metric-amber">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </div>
+                <div class="metric-details">
+                    <span class="metric-value" id="distinctCodesCount">0</span>
+                    <span class="metric-label">Active Sync Codes</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search & Filter Controls -->
+        <section class="controls-card">
+            <div class="controls-top">
+                <div class="search-box-wrap">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search Roll Number, Student Name, Degree, Batch, Test or Code..." oninput="handleSearchFilter()">
+                </div>
+
+                <div class="filter-group">
+                    <select id="batchFilter" class="custom-select" onchange="handleSearchFilter()">
+                        <option value="">All Batches</option>
+                    </select>
+
+                    <select id="codeFilter" class="custom-select" onchange="handleSearchFilter()">
+                        <option value="">All Codes</option>
+                    </select>
+
+                    <select id="sortSelect" class="custom-select" onchange="handleSearchFilter()">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="roll">Roll Number (A-Z)</option>
+                        <option value="name">Name (A-Z)</option>
+                    </select>
+
+                    <div class="export-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="exportCSV()" title="Export all filtered data to CSV">
+                            📥 CSV
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="exportJSON()" title="Export all filtered data to JSON">
+                            📋 JSON
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="clearFilters()" title="Reset all search filters">
+                            ✕ Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sessions Table -->
+        <main class="table-card">
+            <div class="table-header-bar">
+                <div class="table-title-area">
+                    <h2>Tracked Student Sessions</h2>
+                    <span id="tableSubtitle">Real-time candidate telemetry from PAT / Examly portal</span>
+                </div>
+                <div style="font-size: 0.76rem; color: var(--text-muted); font-weight: 600;" id="recordsCountDisplay">
+                    Showing 0 records
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Degree & Department</th>
+                            <th>Batch</th>
+                            <th>Test Name</th>
+                            <th>Used Code</th>
+                            <th>Login / Active Time</th>
+                            <th>Status</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessionsTableBody">
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                                    </svg>
+                                    <h3>Connecting to Telemetry Database...</h3>
+                                    <p>Fetching active exam session logs from Firestore. Candidate metadata will show up here automatically when tests are opened.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Candidate Session Telemetry</h3>
+                <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalDetailsBody">
+                <!-- Dynamically populated -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm" onclick="copyModalJSON()">Copy Raw JSON</button>
+                <button class="btn btn-primary btn-sm" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebaseConfig.js"></script>
+
+    <script>
+        // State variables
+        let allTracks = [];
+        let filteredTracks = [];
+        let db = null;
+        let isRealtimeConnected = false;
+        let activeModalTrack = null;
+
+        // Fallback default config if firebaseConfig.js is not present
+        const DEFAULT_CONFIG = {
+            apiKey: "AIzaSyA7tjTgZfv8rNYYdx4Z_pVmAuRmhPSWlkM",
+            projectId: "neoshield"
+        };
+        const activeConfig = (typeof window !== 'undefined' && window.FIREBASE_CONFIG) ? window.FIREBASE_CONFIG : DEFAULT_CONFIG;
+
+        // Initialize Firestore
+        function initTelemetryEngine() {
+            try {
+                if (typeof firebase !== 'undefined' && firebase.initializeApp) {
+                    firebase.initializeApp(activeConfig);
+                    db = firebase.firestore();
+
+                    // Listen in realtime to 'tracks' collection
+                    db.collection('tracks').onSnapshot((snapshot) => {
+                        const items = [];
+                        snapshot.forEach((doc) => {
+                            const d = doc.data();
+                            items.push({
+                                docId: doc.id,
+                                rollNo: d.rollNo || 'N/A',
+                                name: d.name || 'Student',
+                                degree: d.degree || 'Engineering',
+                                batch: d.batch || '',
+                                testName: d.testName || 'Exam Session',
+                                email: d.email || '',
+                                code: d.code || '000',
+                                loginTime: d.loginTime || '',
+                                lastActiveTime: d.lastActiveTime || d.loginTime || '',
+                                timestamp: Number(d.timestamp) || 0,
+                                url: d.url || '',
+                                platform: d.platform || 'PAT / Examly',
+                                status: d.status || 'Active'
+                            });
+                        });
+
+                        isRealtimeConnected = true;
+                        updateLiveBadge(true);
+                        processAndRender(items);
+                    }, (err) => {
+                        console.warn("Realtime listener failed, falling back to REST API:", err);
+                        fallbackRESTFetch();
+                    });
+                } else {
+                    fallbackRESTFetch();
+                }
+            } catch(e) {
+                fallbackRESTFetch();
+            }
+        }
+
+        // REST API Fallback
+        async function fallbackRESTFetch() {
+            try {
+                const url = `https://firestore.googleapis.com/v1/projects/${activeConfig.projectId}/databases/(default)/documents/tracks?key=${activeConfig.apiKey}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const data = await res.json();
+                const rawDocs = data.documents || [];
+                const items = rawDocs.map(doc => {
+                    const f = doc.fields || {};
+                    const docId = doc.name ? doc.name.split('/').pop() : '';
+                    return {
+                        docId: docId,
+                        rollNo: f.rollNo?.stringValue || 'N/A',
+                        name: f.name?.stringValue || 'Student',
+                        degree: f.degree?.stringValue || 'Engineering',
+                        batch: f.batch?.stringValue || '',
+                        testName: f.testName?.stringValue || 'Exam Session',
+                        email: f.email?.stringValue || '',
+                        code: f.code?.stringValue || '000',
+                        loginTime: f.loginTime?.stringValue || '',
+                        lastActiveTime: f.lastActiveTime?.stringValue || f.loginTime?.stringValue || '',
+                        timestamp: Number(f.timestamp?.integerValue) || 0,
+                        url: f.url?.stringValue || '',
+                        platform: f.platform?.stringValue || 'PAT / Examly',
+                        status: f.status?.stringValue || 'Active'
+                    };
+                });
+
+                updateLiveBadge(false);
+                processAndRender(items);
+            } catch(err) {
+                console.error("REST Fetch error:", err);
+                // Load cached records from localStorage if network offline
+                const cached = localStorage.getItem('neo_track_cache');
+                if (cached) {
+                    processAndRender(JSON.parse(cached));
+                }
+            }
+        }
+
+        function updateLiveBadge(isRealtime) {
+            const badge = document.getElementById('liveStatusBadge');
+            const text = document.getElementById('liveStatusText');
+            if (isRealtime) {
+                text.textContent = 'Live Sync Active';
+                badge.style.background = 'var(--success-bg)';
+                badge.style.color = '#065f46';
+                badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+            } else {
+                text.textContent = 'REST Auto-Poll';
+                badge.style.background = 'var(--primary-light)';
+                badge.style.color = 'var(--primary-dark)';
+                badge.style.borderColor = 'rgba(22, 134, 255, 0.3)';
+            }
+        }
+
+        // Process items and populate filters
+        function processAndRender(items) {
+            // Sort by newest timestamp by default
+            items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            allTracks = items;
+
+            // Cache to localStorage
+            try {
+                localStorage.setItem('neo_track_cache', JSON.stringify(items));
+            } catch(e) {}
+
+            populateFilterDropdowns();
+            updateMetrics();
+            handleSearchFilter();
+        }
+
+        function populateFilterDropdowns() {
+            const batchFilter = document.getElementById('batchFilter');
+            const codeFilter = document.getElementById('codeFilter');
+            const currentBatch = batchFilter.value;
+            const currentCode = codeFilter.value;
+
+            // Distinct Batches
+            const batches = Array.from(new Set(allTracks.map(t => t.batch).filter(Boolean))).sort();
+            batchFilter.innerHTML = '<option value="">All Batches</option>' + 
+                batches.map(b => `<option value="${b}" ${b === currentBatch ? 'selected' : ''}>Batch ${b}</option>`).join('');
+
+            // Distinct Codes
+            const codes = Array.from(new Set(allTracks.map(t => t.code).filter(Boolean))).sort();
+            codeFilter.innerHTML = '<option value="">All Codes</option>' + 
+                codes.map(c => `<option value="${c}" ${c === currentCode ? 'selected' : ''}>Code ${c}</option>`).join('');
+        }
+
+        function updateMetrics() {
+            document.getElementById('totalSessionsCount').textContent = allTracks.length;
+
+            const uniqueStudents = new Set(allTracks.map(t => t.rollNo).filter(r => r && r !== 'N/A')).size;
+            document.getElementById('uniqueStudentsCount').textContent = uniqueStudents;
+
+            const activeTests = new Set(allTracks.map(t => t.testName).filter(Boolean)).size;
+            document.getElementById('activeTestsCount').textContent = activeTests;
+
+            const distinctCodes = new Set(allTracks.map(t => t.code).filter(Boolean)).size;
+            document.getElementById('distinctCodesCount').textContent = distinctCodes;
+        }
+
+        // Filtering and search logic
+        function handleSearchFilter() {
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
+            const batchVal = document.getElementById('batchFilter').value;
+            const codeVal = document.getElementById('codeFilter').value;
+            const sortVal = document.getElementById('sortSelect').value;
+
+            filteredTracks = allTracks.filter(t => {
+                if (batchVal && t.batch !== batchVal) return false;
+                if (codeVal && t.code !== codeVal) return false;
+
+                if (query) {
+                    const matchRoll = (t.rollNo || '').toLowerCase().includes(query);
+                    const matchName = (t.name || '').toLowerCase().includes(query);
+                    const matchDegree = (t.degree || '').toLowerCase().includes(query);
+                    const matchBatch = (t.batch || '').toLowerCase().includes(query);
+                    const matchTest = (t.testName || '').toLowerCase().includes(query);
+                    const matchCode = (t.code || '').toLowerCase().includes(query);
+                    const matchEmail = (t.email || '').toLowerCase().includes(query);
+                    return matchRoll || matchName || matchDegree || matchBatch || matchTest || matchCode || matchEmail;
+                }
+                return true;
+            });
+
+            // Sorting
+            if (sortVal === 'newest') {
+                filteredTracks.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            } else if (sortVal === 'oldest') {
+                filteredTracks.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            } else if (sortVal === 'roll') {
+                filteredTracks.sort((a, b) => (a.rollNo || '').localeCompare(b.rollNo || ''));
+            } else if (sortVal === 'name') {
+                filteredTracks.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            }
+
+            renderTable(filteredTracks);
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('batchFilter').value = '';
+            document.getElementById('codeFilter').value = '';
+            document.getElementById('sortSelect').value = 'newest';
+            handleSearchFilter();
+            showToast('Filters cleared');
+        }
+
+        // Render Table Rows
+        function renderTable(tracks) {
+            const tbody = document.getElementById('sessionsTableBody');
+            const countDisplay = document.getElementById('recordsCountDisplay');
+
+            countDisplay.textContent = `Showing ${tracks.length} of ${allTracks.length} records`;
+
+            if (tracks.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                <h3>No Candidate Sessions Found</h3>
+                                <p>No exam logs match your search criteria. Try modifying your filter or wait for active test sessions to sync.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = tracks.map((t, idx) => {
+                const avatarLetter = (t.name || 'S').trim().charAt(0).toUpperCase();
+                const codeClass = t.code === '000' ? 'code-000' : (t.code === '785' ? 'code-785' : 'code-custom');
+                const relTime = getRelativeTime(t.timestamp);
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="student-cell">
+                                <div class="student-avatar">${avatarLetter}</div>
+                                <div class="student-info">
+                                    <div class="student-name">${escapeHTML(t.name || 'Student')}</div>
+                                    <div class="student-roll">${escapeHTML(t.rollNo || 'N/A')}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="degree-text">${escapeHTML(t.degree || 'Engineering')}</div>
+                        </td>
+                        <td>
+                            <span class="batch-chip">${escapeHTML(t.batch || '—')}</span>
+                        </td>
+                        <td>
+                            <div class="test-chip" title="${escapeHTML(t.testName || '')}">${escapeHTML(t.testName || 'Exam Session')}</div>
+                        </td>
+                        <td>
+                            <span class="code-chip ${codeClass}">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                                ${escapeHTML(t.code || '000')}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="time-cell">
+                                <div class="time-full">${escapeHTML(t.loginTime || '—')}</div>
+                                <div class="time-ago">${relTime}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge">
+                                <span class="live-dot" style="width: 6px; height: 6px;"></span>
+                                Active
+                            </span>
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="row-actions" style="justify-content: flex-end;">
+                                <button class="action-icon-btn" onclick="openModal('${escapeHTML(t.docId)}')" title="View Full Details">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                                <button class="action-icon-btn" onclick="copyRowDetails('${escapeHTML(t.docId)}')" title="Copy Roll & Name">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                                <button class="action-icon-btn btn-danger" onclick="deleteSession('${escapeHTML(t.docId)}')" title="Delete Record">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Relative time helper
+        function getRelativeTime(timestamp) {
+            if (!timestamp) return 'Recorded';
+            const diffMs = Date.now() - timestamp;
+            const mins = Math.floor(diffMs / 60000);
+            if (mins < 1) return 'Just now';
+            if (mins < 60) return `${mins}m ago`;
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            return `${days}d ago`;
+        }
+
+        function escapeHTML(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Details Modal
+        function openModal(docId) {
+            const track = allTracks.find(t => t.docId === docId);
+            if (!track) return;
+            activeModalTrack = track;
+
+            const body = document.getElementById('modalDetailsBody');
+            body.innerHTML = `
+                <div class="detail-row">
+                    <div class="detail-label">Roll Number</div>
+                    <div class="detail-value" style="font-family: monospace; color: var(--primary); font-size: 1rem;">${escapeHTML(track.rollNo)}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Student Name</div>
+                    <div class="detail-value">${escapeHTML(track.name)}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Email ID</div>
+                    <div class="detail-value">${escapeHTML(track.email || '—')}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Degree / Dept</div>
+                    <div class="detail-value">${escapeHTML(track.degree)}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Batch</div>
+                    <div class="detail-value">${escapeHTML(track.batch || '—')}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Test Name</div>
+                    <div class="detail-value">${escapeHTML(track.testName)}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Used Sync Code</div>
+                    <div class="detail-value" style="font-family: monospace; font-size: 1rem; color: #047857;">${escapeHTML(track.code)}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">First Login Time</div>
+                    <div class="detail-value">${escapeHTML(track.loginTime || '—')}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Last Active Ping</div>
+                    <div class="detail-value">${escapeHTML(track.lastActiveTime || '—')}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Platform</div>
+                    <div class="detail-value">${escapeHTML(track.platform)}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Portal URL</div>
+                    <div class="detail-value" style="font-size: 0.76rem; max-width: 320px;">${escapeHTML(track.url || '—')}</div>
+                </div>
+                <div class="detail-row" style="border-bottom: none;">
+                    <div class="detail-label">Document ID</div>
+                    <div class="detail-value" style="font-family: monospace; font-size: 0.74rem; color: var(--text-muted);">${escapeHTML(track.docId)}</div>
+                </div>
+            `;
+
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('active');
+            activeModalTrack = null;
+        }
+
+        function copyModalJSON() {
+            if (!activeModalTrack) return;
+            navigator.clipboard.writeText(JSON.stringify(activeModalTrack, null, 2)).then(() => {
+                showToast('Raw telemetry JSON copied to clipboard!');
+            });
+        }
+
+        function copyRowDetails(docId) {
+            const track = allTracks.find(t => t.docId === docId);
+            if (!track) return;
+            const text = `${track.rollNo} - ${track.name} | Batch: ${track.batch} | Test: ${track.testName} | Code: ${track.code}`;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`Copied ${track.rollNo} info to clipboard`);
+            });
+        }
+
+        // Delete Session Record
+        async function deleteSession(docId) {
+            const track = allTracks.find(t => t.docId === docId);
+            const label = track ? `${track.rollNo} (${track.testName})` : docId;
+            if (!confirm(`Are you sure you want to remove session for ${label}?`)) {
+                return;
+            }
+
+            try {
+                // Delete from Firestore
+                const url = `https://firestore.googleapis.com/v1/projects/${activeConfig.projectId}/databases/(default)/documents/tracks/${encodeURIComponent(docId)}?key=${activeConfig.apiKey}`;
+                await fetch(url, { method: 'DELETE' });
+
+                // Remove from local array
+                allTracks = allTracks.filter(t => t.docId !== docId);
+                processAndRender(allTracks);
+                showToast(`Session ${docId} deleted`);
+            } catch(e) {
+                console.error("Delete failed:", e);
+                showToast('Failed to delete session', 'error');
+            }
+        }
+
+        // Export CSV
+        function exportCSV() {
+            if (filteredTracks.length === 0) {
+                showToast('No records available to export', 'warning');
+                return;
+            }
+
+            const headers = ['Roll Number', 'Student Name', 'Degree', 'Batch', 'Test Name', 'Used Code', 'Email', 'Login Time', 'Last Active Time', 'URL'];
+            const rows = filteredTracks.map(t => [
+                `"${(t.rollNo || '').replace(/"/g, '""')}"`,
+                `"${(t.name || '').replace(/"/g, '""')}"`,
+                `"${(t.degree || '').replace(/"/g, '""')}"`,
+                `"${(t.batch || '').replace(/"/g, '""')}"`,
+                `"${(t.testName || '').replace(/"/g, '""')}"`,
+                `"${(t.code || '').replace(/"/g, '""')}"`,
+                `"${(t.email || '').replace(/"/g, '""')}"`,
+                `"${(t.loginTime || '').replace(/"/g, '""')}"`,
+                `"${(t.lastActiveTime || '').replace(/"/g, '""')}"`,
+                `"${(t.url || '').replace(/"/g, '""')}"`
+            ]);
+
+            const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `NeoExamShield_Tracking_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast(`Exported ${filteredTracks.length} records to CSV!`);
+        }
+
+        // Export JSON
+        function exportJSON() {
+            if (filteredTracks.length === 0) {
+                showToast('No records available to export', 'warning');
+                return;
+            }
+
+            const jsonStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(filteredTracks, null, 2));
+            const link = document.createElement('a');
+            link.setAttribute('href', jsonStr);
+            link.setAttribute('download', `NeoExamShield_Tracking_${new Date().toISOString().slice(0, 10)}.json`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast(`Exported ${filteredTracks.length} records to JSON!`);
+        }
+
+        // Manual Refresh
+        function manualRefresh() {
+            const btn = document.getElementById('refreshBtn');
+            btn.style.opacity = '0.6';
+            btn.style.pointerEvents = 'none';
+
+            fallbackRESTFetch().finally(() => {
+                setTimeout(() => {
+                    btn.style.opacity = '1';
+                    btn.style.pointerEvents = 'auto';
+                    showToast('Telemetry refreshed!');
+                }, 300);
+            });
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 14 14"></polyline>
+                </svg>
+                <span>${escapeHTML(message)}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.2s ease';
+                setTimeout(() => toast.remove(), 250);
+            }, 3000);
+        }
+
+        // Close modal on click outside or Escape
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('detailModal');
+            if (e.target === modal) closeModal();
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initTelemetryEngine();
+
+            // Auto poll every 15 seconds if realtime listener is not active
+            setInterval(() => {
+                if (!isRealtimeConnected) {
+                    fallbackRESTFetch();
+                }
+            }, 15000);
+        });
+    </script>
+</body>
+</html>
