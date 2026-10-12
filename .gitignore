@@ -15,9 +15,21 @@ build/
 *.zip
 !NeoExamShield.zip
 
-# Unwanted markdown files
+# Documentation & Notes
 *.md
 !README.md
+
+# Data dumps, research & test files
+data2/
+data/
+scratch/
+test/
+tests/
+*.py
+*.sh
+*.tmp
+*.bak
+*.swp
 
 # OS & Logs
 .DS_Store
