@@ -1,0 +1,7 @@
+{
+  "name": "psgpat",
+  "version": "1.0.0",
+  "description": "PSG College of Technology PAT Portal & NeoExamShield Web Deployment",
+  "private": true,
+  "type": "module"
+}
