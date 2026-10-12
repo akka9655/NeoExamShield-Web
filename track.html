@@ -151,7 +151,7 @@
             gap: 0.75rem;
         }
 
-        .live-status-pill {
+        .sync-status-pill {
             display: inline-flex;
             align-items: center;
             gap: 0.4rem;
@@ -159,24 +159,9 @@
             border-radius: 9999px;
             font-size: 0.74rem;
             font-weight: 600;
-            background: var(--success-bg);
-            color: #065f46;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--success);
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-            animation: pulse-ring 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
-        }
-
-        @keyframes pulse-ring {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+            background: var(--surface-subtle);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
         }
 
         .btn {
@@ -820,11 +805,14 @@
             </div>
 
             <div class="nav-actions">
-                <div class="live-status-pill" id="liveStatusBadge">
-                    <span class="live-dot"></span>
-                    <span id="liveStatusText">Live Sync Active</span>
+                <div class="sync-status-pill" id="syncStatusBadge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <span id="syncStatusText">Ready</span>
                 </div>
-                <button class="btn btn-secondary btn-sm" id="refreshBtn" onclick="manualRefresh()" title="Refresh telemetry">
+                <button class="btn btn-secondary btn-sm" id="refreshBtn" onclick="fetchTracks(true)" title="Refresh Candidate Records">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
                     </svg>
@@ -958,14 +946,13 @@
                             <th>Batch</th>
                             <th>Test Name</th>
                             <th>Used Code</th>
-                            <th>Login / Active Time</th>
-                            <th>Status</th>
+                            <th>Test Start Time</th>
                             <th style="text-align: right;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="sessionsTableBody">
                         <tr>
-                            <td colspan="8">
+                            <td colspan="7">
                                 <div class="empty-state">
                                     <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
@@ -1011,7 +998,6 @@
         let allTracks = [];
         let filteredTracks = [];
         let db = null;
-        let isRealtimeConnected = false;
         let activeModalTrack = null;
 
         // Fallback default config if firebaseConfig.js is not present
@@ -1021,15 +1007,23 @@
         };
         const activeConfig = (typeof window !== 'undefined' && window.FIREBASE_CONFIG) ? window.FIREBASE_CONFIG : DEFAULT_CONFIG;
 
-        // Initialize Firestore
-        function initTelemetryEngine() {
+        // One-time Fetch Candidate Telemetry (Saves Firestore Quota)
+        async function fetchTracks(showSuccessToast = false) {
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) refreshBtn.style.opacity = '0.6';
+            const badgeText = document.getElementById('syncStatusText');
+            if (badgeText) badgeText.textContent = 'Syncing...';
+
             try {
                 if (typeof firebase !== 'undefined' && firebase.initializeApp) {
-                    firebase.initializeApp(activeConfig);
-                    db = firebase.firestore();
-
-                    // Listen in realtime to 'tracks' collection
-                    db.collection('tracks').onSnapshot((snapshot) => {
+                    if (!db) {
+                        try {
+                            firebase.initializeApp(activeConfig);
+                        } catch(e) {}
+                        db = firebase.firestore();
+                    }
+                    if (db) {
+                        const snapshot = await db.collection('tracks').get();
                         const items = [];
                         snapshot.forEach((doc) => {
                             const d = doc.data();
@@ -1043,26 +1037,25 @@
                                 email: d.email || '',
                                 code: d.code || '000',
                                 loginTime: d.loginTime || '',
-                                lastActiveTime: d.lastActiveTime || d.loginTime || '',
                                 timestamp: Number(d.timestamp) || 0,
                                 url: d.url || '',
-                                platform: d.platform || 'PAT / Examly',
-                                status: d.status || 'Active'
+                                platform: d.platform || 'PAT / Examly'
                             });
                         });
-
-                        isRealtimeConnected = true;
-                        updateLiveBadge(true);
                         processAndRender(items);
-                    }, (err) => {
-                        console.warn("Realtime listener failed, falling back to REST API:", err);
-                        fallbackRESTFetch();
-                    });
-                } else {
-                    fallbackRESTFetch();
+                        updateSyncBadge(true);
+                        if (showSuccessToast) showToast('Session logs updated', 'success');
+                        return;
+                    }
                 }
+                await fallbackRESTFetch();
+                if (showSuccessToast) showToast('Session logs updated', 'success');
             } catch(e) {
-                fallbackRESTFetch();
+                console.warn("Firestore SDK fetch failed, falling back to REST:", e);
+                await fallbackRESTFetch();
+                if (showSuccessToast) showToast('Session logs updated', 'success');
+            } finally {
+                if (refreshBtn) refreshBtn.style.opacity = '1';
             }
         }
 
@@ -1088,15 +1081,13 @@
                         email: f.email?.stringValue || '',
                         code: f.code?.stringValue || '000',
                         loginTime: f.loginTime?.stringValue || '',
-                        lastActiveTime: f.lastActiveTime?.stringValue || f.loginTime?.stringValue || '',
                         timestamp: Number(f.timestamp?.integerValue) || 0,
                         url: f.url?.stringValue || '',
-                        platform: f.platform?.stringValue || 'PAT / Examly',
-                        status: f.status?.stringValue || 'Active'
+                        platform: f.platform?.stringValue || 'PAT / Examly'
                     };
                 });
 
-                updateLiveBadge(false);
+                updateSyncBadge(false);
                 processAndRender(items);
             } catch(err) {
                 console.error("REST Fetch error:", err);
@@ -1108,19 +1099,13 @@
             }
         }
 
-        function updateLiveBadge(isRealtime) {
-            const badge = document.getElementById('liveStatusBadge');
-            const text = document.getElementById('liveStatusText');
-            if (isRealtime) {
-                text.textContent = 'Live Sync Active';
-                badge.style.background = 'var(--success-bg)';
-                badge.style.color = '#065f46';
-                badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-            } else {
-                text.textContent = 'REST Auto-Poll';
-                badge.style.background = 'var(--primary-light)';
-                badge.style.color = 'var(--primary-dark)';
-                badge.style.borderColor = 'rgba(22, 134, 255, 0.3)';
+        function updateSyncBadge(isFirebaseSdk) {
+            const badge = document.getElementById('syncStatusBadge');
+            const text = document.getElementById('syncStatusText');
+            if (badge && text) {
+                text.textContent = 'Synced';
+                badge.style.background = 'var(--surface-subtle)';
+                badge.style.color = 'var(--text)';
             }
         }
 
@@ -1282,12 +1267,6 @@
                                 <div class="time-ago">${relTime}</div>
                             </div>
                         </td>
-                        <td>
-                            <span class="status-badge">
-                                <span class="live-dot" style="width: 6px; height: 6px;"></span>
-                                Active
-                            </span>
-                        </td>
                         <td style="text-align: right;">
                             <div class="row-actions" style="justify-content: flex-end;">
                                 <button class="action-icon-btn" onclick="openModal('${escapeHTML(t.docId)}')" title="View Full Details">
@@ -1374,12 +1353,8 @@
                     <div class="detail-value" style="font-family: monospace; font-size: 1rem; color: #047857;">${escapeHTML(track.code)}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">First Login Time</div>
+                    <div class="detail-label">Test Start Time</div>
                     <div class="detail-value">${escapeHTML(track.loginTime || '—')}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Last Active Ping</div>
-                    <div class="detail-value">${escapeHTML(track.lastActiveTime || '—')}</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Platform</div>
@@ -1538,16 +1513,9 @@
             if (e.key === 'Escape') closeModal();
         });
 
-        // Initialize on load
+        // Initialize on load (Single fetch, zero continuous background polling to preserve Firebase free tier)
         window.addEventListener('DOMContentLoaded', () => {
-            initTelemetryEngine();
-
-            // Auto poll every 15 seconds if realtime listener is not active
-            setInterval(() => {
-                if (!isRealtimeConnected) {
-                    fallbackRESTFetch();
-                }
-            }, 15000);
+            fetchTracks(false);
         });
     </script>
 </body>
