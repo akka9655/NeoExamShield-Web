@@ -471,9 +471,10 @@
             width: fit-content;
         }
 
-        .degree-text {
+        .degree-text,
+        .dept-text {
             font-size: 0.82rem;
-            font-weight: 500;
+            font-weight: 600;
             color: #334155;
             max-width: 260px;
             white-space: normal;
@@ -891,7 +892,7 @@
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Search Roll Number, Student Name, Degree, Batch, Test or Code..." oninput="handleSearchFilter()">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search Name, Dept, Batch, Used Code, Test Name, or Time..." oninput="handleSearchFilter()">
                 </div>
 
                 <div class="filter-group">
@@ -906,15 +907,15 @@
                     <select id="sortSelect" class="custom-select" onchange="handleSearchFilter()">
                         <option value="newest">Newest First</option>
                         <option value="oldest">Oldest First</option>
-                        <option value="roll">Roll Number (A-Z)</option>
                         <option value="name">Name (A-Z)</option>
+                        <option value="dept">Dept (A-Z)</option>
                     </select>
 
                     <div class="export-actions">
-                        <button class="btn btn-secondary btn-sm" onclick="exportCSV()" title="Export all filtered data to CSV">
+                        <button class="btn btn-secondary btn-sm" onclick="exportCSV()" title="Export filtered data to CSV">
                             📥 CSV
                         </button>
-                        <button class="btn btn-secondary btn-sm" onclick="exportJSON()" title="Export all filtered data to JSON">
+                        <button class="btn btn-secondary btn-sm" onclick="exportJSON()" title="Export filtered data to JSON">
                             📋 JSON
                         </button>
                         <button class="btn btn-secondary btn-sm" onclick="clearFilters()" title="Reset all search filters">
@@ -941,12 +942,12 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Student</th>
-                            <th>Degree & Department</th>
+                            <th>Name</th>
+                            <th>Dept</th>
                             <th>Batch</th>
-                            <th>Test Name</th>
                             <th>Used Code</th>
-                            <th>Test Start Time</th>
+                            <th>Test Name</th>
+                            <th>Time</th>
                             <th style="text-align: right;">Actions</th>
                         </tr>
                     </thead>
@@ -1027,14 +1028,17 @@
                         const items = [];
                         snapshot.forEach((doc) => {
                             const d = doc.data();
+                            const studentName = (d.name || '').trim();
+                            // Filter out placeholder or invalid student records
+                            if (!studentName || studentName.toLowerCase() === 'student' || studentName.startsWith('route:') || studentName.length < 2) return;
+
                             items.push({
                                 docId: doc.id,
-                                rollNo: d.rollNo || 'N/A',
-                                name: d.name || 'Student',
-                                degree: d.degree || 'Engineering',
+                                name: studentName,
+                                dept: (d.dept || d.degree || '—').trim(),
+                                degree: (d.degree || d.dept || '—').trim(),
                                 batch: d.batch || '',
                                 testName: d.testName || 'Exam Session',
-                                email: d.email || '',
                                 code: d.code || '000',
                                 loginTime: d.loginTime || '',
                                 timestamp: Number(d.timestamp) || 0,
@@ -1071,27 +1075,29 @@
                 const items = rawDocs.map(doc => {
                     const f = doc.fields || {};
                     const docId = doc.name ? doc.name.split('/').pop() : '';
+                    const studentName = (f.name?.stringValue || '').trim();
+                    // Filter out placeholder or invalid student records
+                    if (!studentName || studentName.toLowerCase() === 'student' || studentName.startsWith('route:') || studentName.length < 2) return null;
+
                     return {
                         docId: docId,
-                        rollNo: f.rollNo?.stringValue || 'N/A',
-                        name: f.name?.stringValue || 'Student',
-                        degree: f.degree?.stringValue || 'Engineering',
+                        name: studentName,
+                        dept: (f.dept?.stringValue || f.degree?.stringValue || '—').trim(),
+                        degree: (f.degree?.stringValue || f.dept?.stringValue || '—').trim(),
                         batch: f.batch?.stringValue || '',
                         testName: f.testName?.stringValue || 'Exam Session',
-                        email: f.email?.stringValue || '',
                         code: f.code?.stringValue || '000',
                         loginTime: f.loginTime?.stringValue || '',
                         timestamp: Number(f.timestamp?.integerValue) || 0,
                         url: f.url?.stringValue || '',
                         platform: f.platform?.stringValue || 'PAT / Examly'
                     };
-                });
+                }).filter(Boolean);
 
                 updateSyncBadge(false);
                 processAndRender(items);
             } catch(err) {
                 console.error("REST Fetch error:", err);
-                // Load cached records from localStorage if network offline
                 const cached = localStorage.getItem('neo_track_cache');
                 if (cached) {
                     processAndRender(JSON.parse(cached));
@@ -1145,7 +1151,7 @@
         function updateMetrics() {
             document.getElementById('totalSessionsCount').textContent = allTracks.length;
 
-            const uniqueStudents = new Set(allTracks.map(t => t.rollNo).filter(r => r && r !== 'N/A')).size;
+            const uniqueStudents = new Set(allTracks.map(t => t.name).filter(Boolean)).size;
             document.getElementById('uniqueStudentsCount').textContent = uniqueStudents;
 
             const activeTests = new Set(allTracks.map(t => t.testName).filter(Boolean)).size;
@@ -1167,14 +1173,13 @@
                 if (codeVal && t.code !== codeVal) return false;
 
                 if (query) {
-                    const matchRoll = (t.rollNo || '').toLowerCase().includes(query);
                     const matchName = (t.name || '').toLowerCase().includes(query);
-                    const matchDegree = (t.degree || '').toLowerCase().includes(query);
+                    const matchDept = (t.dept || t.degree || '').toLowerCase().includes(query);
                     const matchBatch = (t.batch || '').toLowerCase().includes(query);
-                    const matchTest = (t.testName || '').toLowerCase().includes(query);
                     const matchCode = (t.code || '').toLowerCase().includes(query);
-                    const matchEmail = (t.email || '').toLowerCase().includes(query);
-                    return matchRoll || matchName || matchDegree || matchBatch || matchTest || matchCode || matchEmail;
+                    const matchTest = (t.testName || '').toLowerCase().includes(query);
+                    const matchTime = (t.loginTime || '').toLowerCase().includes(query);
+                    return matchName || matchDept || matchBatch || matchCode || matchTest || matchTime;
                 }
                 return true;
             });
@@ -1184,10 +1189,10 @@
                 filteredTracks.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             } else if (sortVal === 'oldest') {
                 filteredTracks.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-            } else if (sortVal === 'roll') {
-                filteredTracks.sort((a, b) => (a.rollNo || '').localeCompare(b.rollNo || ''));
             } else if (sortVal === 'name') {
                 filteredTracks.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            } else if (sortVal === 'dept') {
+                filteredTracks.sort((a, b) => (a.dept || a.degree || '').localeCompare(b.dept || b.degree || ''));
             }
 
             renderTable(filteredTracks);
@@ -1212,7 +1217,7 @@
             if (tracks.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="8">
+                        <td colspan="7">
                             <div class="empty-state">
                                 <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="11" cy="11" r="8"></circle>
@@ -1231,26 +1236,21 @@
                 const avatarLetter = (t.name || 'S').trim().charAt(0).toUpperCase();
                 const codeClass = t.code === '000' ? 'code-000' : (t.code === '785' ? 'code-785' : 'code-custom');
                 const relTime = getRelativeTime(t.timestamp);
+                const deptDisplay = (t.dept || t.degree || '—').trim();
 
                 return `
                     <tr>
                         <td>
                             <div class="student-cell">
                                 <div class="student-avatar">${avatarLetter}</div>
-                                <div class="student-info">
-                                    <div class="student-name">${escapeHTML(t.name || 'Student')}</div>
-                                    <div class="student-roll">${escapeHTML(t.rollNo || 'N/A')}</div>
-                                </div>
+                                <span class="student-name">${escapeHTML(t.name || '—')}</span>
                             </div>
                         </td>
                         <td>
-                            <div class="degree-text">${escapeHTML(t.degree || 'Engineering')}</div>
+                            <div class="dept-text">${escapeHTML(deptDisplay)}</div>
                         </td>
                         <td>
                             <span class="batch-chip">${escapeHTML(t.batch || '—')}</span>
-                        </td>
-                        <td>
-                            <div class="test-chip" title="${escapeHTML(t.testName || '')}">${escapeHTML(t.testName || 'Exam Session')}</div>
                         </td>
                         <td>
                             <span class="code-chip ${codeClass}">
@@ -1262,6 +1262,9 @@
                             </span>
                         </td>
                         <td>
+                            <div class="test-chip" title="${escapeHTML(t.testName || '')}">${escapeHTML(t.testName || 'Exam Session')}</div>
+                        </td>
+                        <td>
                             <div class="time-cell">
                                 <div class="time-full">${escapeHTML(t.loginTime || '—')}</div>
                                 <div class="time-ago">${relTime}</div>
@@ -1269,16 +1272,10 @@
                         </td>
                         <td style="text-align: right;">
                             <div class="row-actions" style="justify-content: flex-end;">
-                                <button class="action-icon-btn" onclick="openModal('${escapeHTML(t.docId)}')" title="View Full Details">
+                                <button class="action-icon-btn" onclick="openModal('${escapeHTML(t.docId)}')" title="View Details">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                         <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </button>
-                                <button class="action-icon-btn" onclick="copyRowDetails('${escapeHTML(t.docId)}')" title="Copy Roll & Name">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                     </svg>
                                 </button>
                                 <button class="action-icon-btn btn-danger" onclick="deleteSession('${escapeHTML(t.docId)}')" title="Delete Record">
@@ -1325,40 +1322,32 @@
             const body = document.getElementById('modalDetailsBody');
             body.innerHTML = `
                 <div class="detail-row">
-                    <div class="detail-label">Roll Number</div>
-                    <div class="detail-value" style="font-family: monospace; color: var(--primary); font-size: 1rem;">${escapeHTML(track.rollNo)}</div>
+                    <div class="detail-label">Name</div>
+                    <div class="detail-value" style="font-size: 1rem; color: var(--primary); font-weight: 700;">${escapeHTML(track.name)}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Student Name</div>
-                    <div class="detail-value">${escapeHTML(track.name)}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Email ID</div>
-                    <div class="detail-value">${escapeHTML(track.email || '—')}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Degree / Dept</div>
-                    <div class="detail-value">${escapeHTML(track.degree)}</div>
+                    <div class="detail-label">Dept</div>
+                    <div class="detail-value">${escapeHTML(track.dept || track.degree || '—')}</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Batch</div>
                     <div class="detail-value">${escapeHTML(track.batch || '—')}</div>
                 </div>
                 <div class="detail-row">
+                    <div class="detail-label">Used Code</div>
+                    <div class="detail-value" style="font-family: monospace; font-size: 1rem; color: #047857; font-weight: 700;">${escapeHTML(track.code)}</div>
+                </div>
+                <div class="detail-row">
                     <div class="detail-label">Test Name</div>
                     <div class="detail-value">${escapeHTML(track.testName)}</div>
                 </div>
                 <div class="detail-row">
-                    <div class="detail-label">Used Sync Code</div>
-                    <div class="detail-value" style="font-family: monospace; font-size: 1rem; color: #047857;">${escapeHTML(track.code)}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Test Start Time</div>
+                    <div class="detail-label">Time</div>
                     <div class="detail-value">${escapeHTML(track.loginTime || '—')}</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Platform</div>
-                    <div class="detail-value">${escapeHTML(track.platform)}</div>
+                    <div class="detail-value">${escapeHTML(track.platform || 'PAT / Examly')}</div>
                 </div>
                 <div class="detail-row">
                     <div class="detail-label">Portal URL</div>
@@ -1385,19 +1374,10 @@
             });
         }
 
-        function copyRowDetails(docId) {
-            const track = allTracks.find(t => t.docId === docId);
-            if (!track) return;
-            const text = `${track.rollNo} - ${track.name} | Batch: ${track.batch} | Test: ${track.testName} | Code: ${track.code}`;
-            navigator.clipboard.writeText(text).then(() => {
-                showToast(`Copied ${track.rollNo} info to clipboard`);
-            });
-        }
-
         // Delete Session Record
         async function deleteSession(docId) {
             const track = allTracks.find(t => t.docId === docId);
-            const label = track ? `${track.rollNo} (${track.testName})` : docId;
+            const label = track ? `${track.name} (${track.testName})` : docId;
             if (!confirm(`Are you sure you want to remove session for ${label}?`)) {
                 return;
             }
@@ -1424,18 +1404,14 @@
                 return;
             }
 
-            const headers = ['Roll Number', 'Student Name', 'Degree', 'Batch', 'Test Name', 'Used Code', 'Email', 'Login Time', 'Last Active Time', 'URL'];
+            const headers = ['Name', 'Dept', 'Batch', 'Used Code', 'Test Name', 'Time'];
             const rows = filteredTracks.map(t => [
-                `"${(t.rollNo || '').replace(/"/g, '""')}"`,
                 `"${(t.name || '').replace(/"/g, '""')}"`,
-                `"${(t.degree || '').replace(/"/g, '""')}"`,
+                `"${(t.dept || t.degree || '').replace(/"/g, '""')}"`,
                 `"${(t.batch || '').replace(/"/g, '""')}"`,
-                `"${(t.testName || '').replace(/"/g, '""')}"`,
                 `"${(t.code || '').replace(/"/g, '""')}"`,
-                `"${(t.email || '').replace(/"/g, '""')}"`,
-                `"${(t.loginTime || '').replace(/"/g, '""')}"`,
-                `"${(t.lastActiveTime || '').replace(/"/g, '""')}"`,
-                `"${(t.url || '').replace(/"/g, '""')}"`
+                `"${(t.testName || '').replace(/"/g, '""')}"`,
+                `"${(t.loginTime || '').replace(/"/g, '""')}"`
             ]);
 
             const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
