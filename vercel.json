@@ -8,7 +8,7 @@
     { "source": "/download", "destination": "/NeoExamShield.zip", "permanent": false }
   ],
   "rewrites": [
-    { "source": "/setup", "destination": "/setup.html" },
+    { "source": "/a", "destination": "/a.html" },
     { "source": "/login", "destination": "/index.html" },
     { "source": "/", "destination": "/index.html" }
   ],

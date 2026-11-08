@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoExamShield Admin — PSG College of Technology</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #070B14;
+            --bg-card: #0F172A;
+            --bg-card-hover: #1E293B;
+            --bg-input: #1E293B;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(56, 189, 248, 0.4);
+            --primary: #38BDF8;
+            --primary-glow: rgba(56, 189, 248, 0.25);
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+            --success: #10B981;
+            --success-glow: rgba(16, 185, 129, 0.25);
+            --danger: #EF4444;
+            --danger-glow: rgba(239, 68, 68, 0.25);
+            --warning: #F59E0B;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Ambient glow backdrop */
+        .ambient-glow {
+            position: fixed;
+            top: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 700px;
+            height: 350px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(99, 102, 241, 0.05) 50%, transparent 80%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Login Overlay */
+        #loginOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(7, 11, 20, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            z-index: 9999;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .login-logo {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, #0284C7, #2563EB);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+            font-size: 26px;
+            box-shadow: 0 8px 20px var(--primary-glow);
+        }
+
+        .login-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.35rem;
+        }
+
+        .login-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.75rem;
+        }
+
+        .login-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 0.85rem 1rem;
+            color: #fff;
+            font-size: 1.2rem;
+            text-align: center;
+            letter-spacing: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .login-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #0284C7, #2563EB);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 0.85rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .login-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-error {
+            color: var(--danger);
+            font-size: 0.82rem;
+            margin-top: 0.85rem;
+            min-height: 1.2rem;
+        }
+
+        /* Top Nav */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.85rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-badge {
+            background: linear-gradient(135deg, #0284C7, #2563EB);
+            color: #fff;
+            font-weight: 800;
+            font-size: 14px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .brand-text h1 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        .brand-text span {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.12);
+            color: #F87171;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.22);
+            color: #fff;
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            max-width: 1320px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.75rem 2rem 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Tabs Nav */
+        .tabs-nav {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 18px;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .tab-btn.active {
+            color: #fff;
+            background: rgba(56, 189, 248, 0.14);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .tab-badge {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 0.72rem;
+            padding: 2px 7px;
+            border-radius: 999px;
+            font-weight: 700;
+        }
+
+        .tab-btn.active .tab-badge {
+            background: var(--primary);
+            color: #070B14;
+        }
+
+        /* Tab Content */
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Controls Bar */
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 380px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 8px 14px 8px 36px;
+            color: #fff;
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-action {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            font-size: 0.83rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+
+        .btn-action:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-action.danger {
+            background: rgba(239, 68, 68, 0.12);
+            color: #F87171;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-action.danger:hover {
+            background: rgba(239, 68, 68, 0.22);
+            color: #fff;
+        }
+
+        .btn-action.primary {
+            background: linear-gradient(135deg, #0284C7, #2563EB);
+            color: #fff;
+            border: none;
+        }
+
+        .btn-action.primary:hover {
+            opacity: 0.95;
+        }
+
+        /* Table Card */
+        .table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        thead {
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 13px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            white-space: nowrap;
+            color: #CBD5E1;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .roll-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            color: var(--primary);
+            background: rgba(56, 189, 248, 0.1);
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            display: inline-block;
+        }
+
+        .code-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            color: #FBBF24;
+            background: rgba(245, 158, 11, 0.1);
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            display: inline-block;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 999px;
+        }
+
+        .status-pill.active {
+            background: rgba(16, 185, 129, 0.12);
+            color: #4ADE80;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-pill.paused {
+            background: rgba(239, 68, 68, 0.12);
+            color: #F87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .dot-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .dot-indicator.green { background: #4ADE80; box-shadow: 0 0 6px #4ADE80; }
+        .dot-indicator.red { background: #F87171; box-shadow: 0 0 6px #F87171; }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            transition: all 0.15s;
+        }
+
+        .btn-icon:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-icon.delete:hover {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.12);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+
+        .stat-value {
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #fff;
+        }
+
+        .stat-desc {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Form Card */
+        .form-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-subtitle {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group.small {
+            flex: 0 0 140px;
+            min-width: 120px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 8px 12px;
+            color: #fff;
+            font-size: 0.88rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            border-color: var(--primary);
+        }
+
+        .key-input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state {
+            padding: 3rem 1rem;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            opacity: 0.5;
+        }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast */
+        #adminToast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #adminToast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            main { padding: 1rem; }
+            header { padding: 0.75rem 1rem; }
+            .controls-bar { flex-direction: column; align-items: stretch; }
+            .search-box { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+
+    <!-- Login Modal -->
+    <div id="loginOverlay">
+        <div class="login-card">
+            <div class="login-logo">🛡️</div>
+            <h2 class="login-title">NeoExamShield Admin</h2>
+            <p class="login-subtitle">PSG College of Technology Telemetry & Keys</p>
+            <input type="password" id="loginPass" class="login-input" placeholder="••••" maxlength="8" autofocus autocomplete="current-password" />
+            <button class="login-btn" id="loginBtn" type="button">Access Admin Console</button>
+            <div class="login-error" id="loginError"></div>
+        </div>
+    </div>
+
+    <!-- Admin Header -->
+    <header>
+        <div class="brand">
+            <div class="brand-badge">NES</div>
+            <div class="brand-text">
+                <h1>PSG College of Technology</h1>
+                <span>NeoExamShield Telemetry & Admin Console</span>
+            </div>
+        </div>
+        <div class="nav-actions">
+            <button class="btn-logout" id="logoutBtn" type="button">🔒 Log Out</button>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main>
+        <!-- Navigation Tabs -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" data-tab="tabTracking">
+                📊 Usage Tracking <span class="tab-badge" id="countTracking">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tabInstalls">
+                👥 Downloads & Installs <span class="tab-badge" id="countInstalls">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tabCodes">
+                🔑 Code & API Manager <span class="tab-badge" id="countCodes">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tabStats">
+                📈 Analytics & Reports
+            </button>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 1: USAGE TRACKING -->
+        <!-- ============================================================== -->
+        <div class="tab-pane active" id="tabTracking">
+            <div class="controls-bar">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" id="searchTracking" placeholder="Filter by Roll No, Name, Dept, Test, Code..." />
+                </div>
+                <div class="action-btns">
+                    <button class="btn-action" id="btnRefreshTracking" type="button">↻ Refresh</button>
+                    <button class="btn-action" id="btnExportTracking" type="button">📥 Export CSV</button>
+                    <button class="btn-action danger" id="btnDeleteAllTracking" type="button">🗑️ Delete All</button>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table id="tableTracking">
+                        <thead>
+                            <tr>
+                                <th>Roll No</th>
+                                <th>Student Name</th>
+                                <th>Dept / Degree</th>
+                                <th>Batch</th>
+                                <th>Test Name</th>
+                                <th>Login Time</th>
+                                <th>Sync Code</th>
+                                <th style="text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyTracking">
+                            <tr>
+                                <td colspan="8" class="empty-state">
+                                    <div class="spinner"></div>
+                                    <div style="margin-top: 10px;">Loading student telemetry from Firestore...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 2: DOWNLOADS & INSTALLS -->
+        <!-- ============================================================== -->
+        <div class="tab-pane" id="tabInstalls">
+            <div class="controls-bar">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" id="searchInstalls" placeholder="Filter by OS, Device, Version..." />
+                </div>
+                <div class="action-btns">
+                    <button class="btn-action" id="btnRefreshInstalls" type="button">↻ Refresh</button>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table id="tableInstalls">
+                        <thead>
+                            <tr>
+                                <th>Device ID</th>
+                                <th>Operating System</th>
+                                <th>Architecture</th>
+                                <th>Extension Ver</th>
+                                <th>Event Type</th>
+                                <th>First Installed</th>
+                                <th>Last Seen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyInstalls">
+                            <tr>
+                                <td colspan="7" class="empty-state">
+                                    <div class="spinner"></div>
+                                    <div style="margin-top: 10px;">Loading install telemetry...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 3: CODE & API MANAGER -->
+        <!-- ============================================================== -->
+        <div class="tab-pane" id="tabCodes">
+            <!-- Add New Code Card -->
+            <div class="form-card">
+                <div class="form-title">➕ Add New 3-Digit Sync Code & Gemini API Keys</div>
+                <div class="form-subtitle">Create a private 3-digit code to distribute to students. When paused, student extension blocks in real-time.</div>
+                
+                <form id="formAddCode">
+                    <div class="form-row">
+                        <div class="form-group small">
+                            <label class="form-label">3-Digit Code</label>
+                            <input type="text" class="form-input" id="newCodeInput" placeholder="999" maxlength="4" style="text-align:center; font-family:'JetBrains Mono', monospace; font-weight:700; font-size:1.1rem; letter-spacing:2px;" required />
+                        </div>
+                        <div class="form-group">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                                <label class="form-label" style="margin:0;">Model Name</label>
+                                <button type="button" id="btnToggleCustomModel" onclick="toggleCustomModelInput()" style="background:none; border:none; color:var(--primary); font-size:0.75rem; font-weight:600; cursor:pointer; padding:0;">+ Add Custom Model</button>
+                            </div>
+                            <div id="modelSelectContainer">
+                                <select class="form-select" id="newModelSelect" onchange="onModelSelectChange(this)">
+                                    <option value="gemini-2.0-flash">gemini-2.0-flash (Recommended, Ultra-Fast)</option>
+                                    <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (Highest RPM)</option>
+                                    <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                                    <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                                    <option value="gemini-3.5-flash">gemini-3.5-flash</option>
+                                    <option value="gemini-3.6-flash">gemini-3.6-flash</option>
+                                    <option value="__custom__">✎ Enter Custom Model Name...</option>
+                                </select>
+                            </div>
+                            <div id="customModelInputContainer" style="display:none; margin-top:6px;">
+                                <div style="display:flex; gap:6px;">
+                                    <input type="text" class="form-input" id="newCustomModelInput" placeholder="e.g. gemini-2.5-flash" style="font-family:'JetBrains Mono', monospace;" />
+                                    <button type="button" class="btn-action" style="padding:4px 12px; font-size:0.8rem;" onclick="applyCustomModel()">Set</button>
+                                    <button type="button" class="btn-action danger" style="padding:4px 10px; font-size:0.8rem;" onclick="cancelCustomModel()">✕</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label">Gemini API Keys (One or more)</label>
+                        <div id="apiKeyInputsContainer">
+                            <div class="key-input-row">
+                                <input type="text" class="form-input key-field" placeholder="AIzaSy..." required style="font-family:'JetBrains Mono', monospace;" />
+                                <button type="button" class="btn-action" style="padding: 6px 12px;" disabled>Primary</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-action" id="btnAddKeyInput" style="margin-top: 6px; font-size: 0.8rem;">+ Add Another API Key</button>
+                    </div>
+
+                    <button type="submit" class="btn-action primary" id="btnSaveCode" style="padding: 10px 24px;">💾 Save Code & Keys</button>
+                </form>
+            </div>
+
+            <!-- Codes List Table -->
+            <div class="controls-bar">
+                <h3 style="font-size: 1rem; font-weight: 700;">Configured 3-Digit Sync Codes</h3>
+                <button class="btn-action" id="btnRefreshCodes" type="button">↻ Refresh Codes</button>
+            </div>
+
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table id="tableCodes">
+                        <thead>
+                            <tr>
+                                <th>Sync Code</th>
+                                <th>Status</th>
+                                <th>Active Keys</th>
+                                <th>Primary Model</th>
+                                <th>Created / Modified</th>
+                                <th style="text-align: right;">Real-Time Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyCodes">
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <div class="spinner"></div>
+                                    <div style="margin-top: 10px;">Loading sync codes from Firestore...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 4: ANALYTICS & REPORTS -->
+        <!-- ============================================================== -->
+        <div class="tab-pane" id="tabStats">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Unique Students</span>
+                        <span class="stat-icon">🎓</span>
+                    </div>
+                    <div class="stat-value" id="statUniqueStudents">0</div>
+                    <div class="stat-desc">Distinct roll numbers tracked</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Exam Sessions</span>
+                        <span class="stat-icon">📝</span>
+                    </div>
+                    <div class="stat-value" id="statTotalSessions">0</div>
+                    <div class="stat-desc">Total test sessions recorded</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Extension Downloads</span>
+                        <span class="stat-icon">💻</span>
+                    </div>
+                    <div class="stat-value" id="statTotalInstalls">0</div>
+                    <div class="stat-desc">Devices installed on</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Active Sync Codes</span>
+                        <span class="stat-icon">🔑</span>
+                    </div>
+                    <div class="stat-value" id="statActiveCodes">0</div>
+                    <div class="stat-desc">Currently operational codes</div>
+                </div>
+            </div>
+
+            <!-- Top Tests Taken Table -->
+            <div class="table-card" style="margin-top: 1.5rem;">
+                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);">
+                    <h3 style="font-size: 0.95rem; font-weight: 700;">Top Tests Attended by PSG Tech Students</h3>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Test Name</th>
+                                <th>Student Count</th>
+                                <th>Latest Activity</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyTopTests">
+                            <tr>
+                                <td colspan="3" class="empty-state">No test sessions recorded yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Global Toast -->
+    <div id="adminToast">
+        <span id="toastIcon">✓</span>
+        <span id="toastMsg">Operation successful</span>
+    </div>
+
+    <script>
+        // =========================================================================
+        // CONFIG & AUTHENTICATION (Password: 9655)
+        // =========================================================================
+        const FIRESTORE_API_KEY = "AIzaSyA7tjTgZfv8rNYYdx4Z_pVmAuRmhPSWlkM";
+        const FIRESTORE_PROJECT_ID = "neoshield";
+        const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT_ID}/databases/(default)/documents`;
+        const ADMIN_PASS = "9655";
+
+        let attempts = 0;
+        let lockoutTimer = null;
+
+        // Check Session Authentication on Load
+        function checkAuth() {
+            if (sessionStorage.getItem('nes_admin_auth') === 'verified_9655') {
+                document.getElementById('loginOverlay').style.display = 'none';
+                loadAllData();
+            } else {
+                document.getElementById('loginOverlay').style.display = 'flex';
+                document.getElementById('loginPass').focus();
+            }
+        }
+
+        // Login Handler
+        function handleLogin() {
+            if (lockoutTimer) return;
+            const input = document.getElementById('loginPass');
+            const errEl = document.getElementById('loginError');
+            const val = input.value.trim();
+
+            if (val === ADMIN_PASS) {
+                sessionStorage.setItem('nes_admin_auth', 'verified_9655');
+                errEl.textContent = '';
+                document.getElementById('loginOverlay').style.display = 'none';
+                showToast('Welcome back, Admin', '✓');
+                loadAllData();
+            } else {
+                attempts++;
+                input.value = '';
+                if (attempts >= 3) {
+                    let seconds = 30;
+                    errEl.textContent = `Too many failed attempts. Locked out for ${seconds}s`;
+                    document.getElementById('loginBtn').disabled = true;
+                    lockoutTimer = setInterval(() => {
+                        seconds--;
+                        if (seconds <= 0) {
+                            clearInterval(lockoutTimer);
+                            lockoutTimer = null;
+                            attempts = 0;
+                            document.getElementById('loginBtn').disabled = false;
+                            errEl.textContent = 'Please enter password.';
+                        } else {
+                            errEl.textContent = `Too many failed attempts. Locked out for ${seconds}s`;
+                        }
+                    }, 1000);
+                } else {
+                    errEl.textContent = `Incorrect password. (${3 - attempts} attempt(s) remaining)`;
+                }
+            }
+        }
+
+        document.getElementById('loginBtn').addEventListener('click', handleLogin);
+        document.getElementById('loginPass').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            sessionStorage.removeItem('nes_admin_auth');
+            location.reload();
+        });
+
+        // Toast Helper
+        function showToast(msg, icon = '✓') {
+            const t = document.getElementById('adminToast');
+            document.getElementById('toastIcon').textContent = icon;
+            document.getElementById('toastMsg').textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        // =========================================================================
+        // TAB SWITCHING
+        // =========================================================================
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                const targetId = btn.getAttribute('data-tab');
+                document.getElementById(targetId).classList.add('active');
+            });
+        });
+
+        // =========================================================================
+        // DATA STORES
+        // =========================================================================
+        let trackingData = [];
+        let installsData = [];
+        let codesData = [];
+
+        function loadAllData() {
+            fetchTracking();
+            fetchInstalls();
+            fetchCodes();
+        }
+
+        // =========================================================================
+        // TAB 1: USAGE TRACKING
+        // =========================================================================
+        async function fetchTracking() {
+            const tbody = document.getElementById('tbodyTracking');
+            tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><div class="spinner"></div><div style="margin-top:10px;">Loading student telemetry from Firestore...</div></td></tr>`;
+            try {
+                const url = `${FIRESTORE_BASE}/tracks?key=${FIRESTORE_API_KEY}&pageSize=300`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Firestore read failed');
+                const data = await res.json();
+                
+                trackingData = (data.documents || []).map(doc => {
+                    const f = doc.fields || {};
+                    const id = doc.name.split('/').pop();
+                    return {
+                        docId: id,
+                        rollNo: f.rollNo?.stringValue || '',
+                        name: f.name?.stringValue || 'Unknown Student',
+                        dept: f.dept?.stringValue || f.degree?.stringValue || '',
+                        batch: f.batch?.stringValue || '',
+                        testName: f.testName?.stringValue || 'Exam Session',
+                        loginTime: f.loginTime?.stringValue || '',
+                        code: f.code?.stringValue || '000',
+                        timestamp: parseInt(f.timestamp?.integerValue || 0, 10),
+                        url: f.url?.stringValue || ''
+                    };
+                });
+
+                // Sort newest first
+                trackingData.sort((a, b) => b.timestamp - a.timestamp);
+                document.getElementById('countTracking').textContent = trackingData.length;
+                renderTracking(trackingData);
+                updateStats();
+            } catch(e) {
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--danger);">Error loading data: ${e.message}</td></tr>`;
+            }
+        }
+
+        function renderTracking(items) {
+            const tbody = document.getElementById('tbodyTracking');
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><div class="empty-icon">📭</div>No student test sessions recorded yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = items.map(item => `
+                <tr>
+                    <td><span class="roll-badge">${escapeHtml(item.rollNo || 'N/A')}</span></td>
+                    <td style="font-weight:600; color:#fff;">${escapeHtml(item.name)}</td>
+                    <td>${escapeHtml(item.dept || 'Engineering')}</td>
+                    <td>${escapeHtml(item.batch || '—')}</td>
+                    <td style="max-width:280px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(item.testName)}">
+                        ${escapeHtml(item.testName)}
+                    </td>
+                    <td style="font-size:0.78rem; color:var(--text-muted);">${escapeHtml(item.loginTime)}</td>
+                    <td><span class="code-badge">${escapeHtml(item.code)}</span></td>
+                    <td style="text-align:right;">
+                        <button class="btn-icon delete" title="Delete this record" onclick="deleteTrackDoc('${escapeHtml(item.docId)}')">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Search tracking
+        document.getElementById('searchTracking').addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase().trim();
+            const filtered = trackingData.filter(item => 
+                (item.rollNo || '').toLowerCase().includes(q) ||
+                (item.name || '').toLowerCase().includes(q) ||
+                (item.dept || '').toLowerCase().includes(q) ||
+                (item.testName || '').toLowerCase().includes(q) ||
+                (item.code || '').toLowerCase().includes(q)
+            );
+            renderTracking(filtered);
+        });
+
+        // Delete single track record
+        async function deleteTrackDoc(docId) {
+            if (!confirm(`Delete record for ${docId}?`)) return;
+            try {
+                const url = `${FIRESTORE_BASE}/tracks/${encodeURIComponent(docId)}?key=${FIRESTORE_API_KEY}`;
+                const res = await fetch(url, { method: 'DELETE' });
+                if (res.ok) {
+                    showToast('Record deleted', '✓');
+                    fetchTracking();
+                } else {
+                    showToast('Failed to delete', '✕');
+                }
+            } catch(e) {
+                showToast('Error deleting: ' + e.message, '✕');
+            }
+        }
+
+        // Delete All tracking records
+        document.getElementById('btnDeleteAllTracking').addEventListener('click', async () => {
+            if (trackingData.length === 0) return alert('No records to delete.');
+            const confirmation = prompt(`Type "DELETE ALL" to permanently erase all ${trackingData.length} student tracking records:`);
+            if (confirmation !== 'DELETE ALL') return;
+
+            showToast('Deleting all records...', '⏳');
+            try {
+                const deletePromises = trackingData.map(item => 
+                    fetch(`${FIRESTORE_BASE}/tracks/${encodeURIComponent(item.docId)}?key=${FIRESTORE_API_KEY}`, { method: 'DELETE' })
+                );
+                await Promise.all(deletePromises);
+                showToast('All tracking records erased', '✓');
+                fetchTracking();
+            } catch(e) {
+                showToast('Delete all failed: ' + e.message, '✕');
+            }
+        });
+
+        // Export CSV
+        document.getElementById('btnExportTracking').addEventListener('click', () => {
+            if (trackingData.length === 0) return alert('No data to export');
+            const headers = ['Roll No', 'Name', 'Department', 'Batch', 'Test Name', 'Login Time', 'Sync Code', 'URL'];
+            const rows = trackingData.map(d => [
+                `"${(d.rollNo || '').replace(/"/g, '""')}"`,
+                `"${(d.name || '').replace(/"/g, '""')}"`,
+                `"${(d.dept || '').replace(/"/g, '""')}"`,
+                `"${(d.batch || '').replace(/"/g, '""')}"`,
+                `"${(d.testName || '').replace(/"/g, '""')}"`,
+                `"${(d.loginTime || '').replace(/"/g, '""')}"`,
+                `"${(d.code || '').replace(/"/g, '""')}"`,
+                `"${(d.url || '').replace(/"/g, '""')}"`
+            ]);
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `NeoExamShield_Tracking_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('CSV downloaded', '📥');
+        });
+
+        document.getElementById('btnRefreshTracking').addEventListener('click', fetchTracking);
+
+        // =========================================================================
+        // TAB 2: DOWNLOADS & INSTALLS
+        // =========================================================================
+        async function fetchInstalls() {
+            const tbody = document.getElementById('tbodyInstalls');
+            tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="spinner"></div><div style="margin-top:10px;">Loading install telemetry...</div></td></tr>`;
+            try {
+                const url = `${FIRESTORE_BASE}/installs?key=${FIRESTORE_API_KEY}&pageSize=300`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Firestore read failed');
+                const data = await res.json();
+                
+                installsData = (data.documents || []).map(doc => {
+                    const f = doc.fields || {};
+                    return {
+                        deviceId: f.deviceId?.stringValue || doc.name.split('/').pop(),
+                        os: f.os?.stringValue || 'unknown',
+                        arch: f.arch?.stringValue || 'x64',
+                        version: f.version?.stringValue || '1.5.3',
+                        reason: f.reason?.stringValue || 'install',
+                        installedAt: f.installedAt?.stringValue || '',
+                        lastSeen: f.lastSeen?.stringValue || ''
+                    };
+                });
+
+                document.getElementById('countInstalls').textContent = installsData.length;
+                renderInstalls(installsData);
+                updateStats();
+            } catch(e) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--danger);">Error loading data: ${e.message}</td></tr>`;
+            }
+        }
+
+        function renderInstalls(items) {
+            const tbody = document.getElementById('tbodyInstalls');
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="empty-icon">💻</div>No extension installs tracked yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = items.map(item => `
+                <tr>
+                    <td><span class="roll-badge" style="color:#A78BFA; background:rgba(167,139,250,0.1); border-color:rgba(167,139,250,0.25);">${escapeHtml(item.deviceId.slice(0, 16))}</span></td>
+                    <td style="font-weight:600; color:#fff;">${escapeHtml(item.os.toUpperCase())}</td>
+                    <td>${escapeHtml(item.arch)}</td>
+                    <td><span class="code-badge" style="color:#38BDF8; background:rgba(56,189,248,0.1); border-color:rgba(56,189,248,0.25);">v${escapeHtml(item.version)}</span></td>
+                    <td>${escapeHtml(item.reason)}</td>
+                    <td style="font-size:0.78rem; color:var(--text-muted);">${escapeHtml(item.installedAt ? new Date(item.installedAt).toLocaleString('en-IN') : '—')}</td>
+                    <td style="font-size:0.78rem; color:var(--text-muted);">${escapeHtml(item.lastSeen ? new Date(item.lastSeen).toLocaleString('en-IN') : '—')}</td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('searchInstalls').addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase().trim();
+            const filtered = installsData.filter(item => 
+                item.deviceId.toLowerCase().includes(q) ||
+                item.os.toLowerCase().includes(q) ||
+                item.version.toLowerCase().includes(q)
+            );
+            renderInstalls(filtered);
+        });
+
+        document.getElementById('btnRefreshInstalls').addEventListener('click', fetchInstalls);
+
+        // =========================================================================
+        // TAB 3: CODE & API MANAGER
+        // =========================================================================
+        async function fetchCodes() {
+            const tbody = document.getElementById('tbodyCodes');
+            tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="spinner"></div><div style="margin-top:10px;">Loading sync codes from Firestore...</div></td></tr>`;
+            try {
+                const url = `${FIRESTORE_BASE}/users?key=${FIRESTORE_API_KEY}&pageSize=300`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Firestore read failed');
+                const data = await res.json();
+                
+                codesData = (data.documents || []).map(doc => {
+                    const f = doc.fields || {};
+                    const code = doc.name.split('/').pop();
+                    const paused = f.paused?.booleanValue === true;
+                    
+                    // Count keys from both configs and apiKeys arrays
+                    const configs = f.configs?.arrayValue?.values || [];
+                    const apiKeys = f.apiKeys?.arrayValue?.values || [];
+                    const keyCount = Math.max(configs.length, apiKeys.length);
+                    const model = configs[0]?.mapValue?.fields?.modelName?.stringValue || 
+                                  apiKeys[0]?.mapValue?.fields?.modelName?.stringValue || 
+                                  'gemini-2.0-flash';
+
+                    return {
+                        code,
+                        paused,
+                        keyCount: Math.max(keyCount, 1),
+                        model,
+                        modified: doc.updateTime || doc.createTime || ''
+                    };
+                });
+
+                document.getElementById('countCodes').textContent = codesData.length;
+                renderCodes(codesData);
+                updateStats();
+            } catch(e) {
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-state" style="color:var(--danger);">Error loading codes: ${e.message}</td></tr>`;
+            }
+        }
+
+        function renderCodes(items) {
+            const tbody = document.getElementById('tbodyCodes');
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="empty-icon">🔑</div>No 3-digit codes configured yet. Add one above.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = items.map(c => `
+                <tr>
+                    <td><span class="code-badge" style="font-size:1.1rem; padding:4px 12px;">${escapeHtml(c.code)}</span></td>
+                    <td>
+                        <span class="status-pill ${c.paused ? 'paused' : 'active'}">
+                            <span class="dot-indicator ${c.paused ? 'red' : 'green'}"></span>
+                            ${c.paused ? 'Paused (Blocked)' : 'Active (Online)'}
+                        </span>
+                    </td>
+                    <td style="font-weight:600;">${c.keyCount} key${c.keyCount > 1 ? 's' : ''}</td>
+                    <td><span style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; color:#38BDF8;">${escapeHtml(c.model)}</span></td>
+                    <td style="font-size:0.78rem; color:var(--text-muted);">${c.modified ? new Date(c.modified).toLocaleString('en-IN') : '—'}</td>
+                    <td style="text-align:right;">
+                        <button class="btn-action ${c.paused ? 'primary' : 'danger'}" style="padding:4px 12px; font-size:0.78rem; display:inline-flex;" onclick="togglePauseCode('${escapeHtml(c.code)}', ${c.paused})">
+                            ${c.paused ? '▶ Unpause Code' : '⏸ Pause Code'}
+                        </button>
+                        <button class="btn-icon delete" style="margin-left:6px;" title="Delete Code" onclick="deleteCodeDoc('${escapeHtml(c.code)}')">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Real-Time Pause / Unpause Toggle
+        async function togglePauseCode(code, currentPaused) {
+            const newPaused = !currentPaused;
+            showToast(`${newPaused ? 'Pausing' : 'Unpausing'} code ${code}...`, '⏳');
+            try {
+                const url = `${FIRESTORE_BASE}/users/${encodeURIComponent(code)}?updateMask.fieldPaths=paused&key=${FIRESTORE_API_KEY}`;
+                const res = await fetch(url, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fields: {
+                            paused: { booleanValue: newPaused }
+                        }
+                    })
+                });
+                if (res.ok) {
+                    showToast(`Code ${code} is now ${newPaused ? 'PAUSED (Students blocked)' : 'ACTIVE'}`, '✓');
+                    fetchCodes();
+                } else {
+                    showToast('Failed to update status', '✕');
+                }
+            } catch(e) {
+                showToast('Error: ' + e.message, '✕');
+            }
+        }
+
+        // Delete Code
+        async function deleteCodeDoc(code) {
+            if (!confirm(`Permanently delete sync code ${code}? Students using it will be blocked.`)) return;
+            try {
+                const url = `${FIRESTORE_BASE}/users/${encodeURIComponent(code)}?key=${FIRESTORE_API_KEY}`;
+                const res = await fetch(url, { method: 'DELETE' });
+                if (res.ok) {
+                    showToast(`Code ${code} deleted`, '✓');
+                    fetchCodes();
+                } else {
+                    showToast('Delete failed', '✕');
+                }
+            } catch(e) {
+                showToast('Error: ' + e.message, '✕');
+            }
+        }
+
+        // Dynamic Key Input Rows
+        document.getElementById('btnAddKeyInput').addEventListener('click', () => {
+            const container = document.getElementById('apiKeyInputsContainer');
+            const row = document.createElement('div');
+            row.className = 'key-input-row';
+            row.innerHTML = `
+                <input type="text" class="form-input key-field" placeholder="AIzaSy..." required style="font-family:'JetBrains Mono', monospace;" />
+                <button type="button" class="btn-action danger" style="padding: 6px 10px;" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(row);
+        });
+
+        // Custom Model Helpers
+        window.toggleCustomModelInput = function() {
+            const customDiv = document.getElementById('customModelInputContainer');
+            const input = document.getElementById('newCustomModelInput');
+            if (customDiv.style.display === 'none') {
+                customDiv.style.display = 'block';
+                input.focus();
+            } else {
+                customDiv.style.display = 'none';
+            }
+        };
+
+        window.onModelSelectChange = function(select) {
+            if (select.value === '__custom__') {
+                document.getElementById('customModelInputContainer').style.display = 'block';
+                document.getElementById('newCustomModelInput').focus();
+            } else {
+                document.getElementById('customModelInputContainer').style.display = 'none';
+            }
+        };
+
+        window.applyCustomModel = function() {
+            const input = document.getElementById('newCustomModelInput');
+            const val = input.value.trim();
+            if (!val) return alert('Enter a valid model name (e.g. gemini-2.5-flash)');
+            const select = document.getElementById('newModelSelect');
+            
+            let exists = false;
+            for (let opt of select.options) {
+                if (opt.value === val) {
+                    opt.selected = true;
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                const newOpt = new Option(`${val} (Custom)`, val, true, true);
+                select.add(newOpt, select.options[select.options.length - 1]);
+            }
+            document.getElementById('customModelInputContainer').style.display = 'none';
+            showToast(`Model set to ${val}`, '✓');
+        };
+
+        window.cancelCustomModel = function() {
+            document.getElementById('customModelInputContainer').style.display = 'none';
+            const select = document.getElementById('newModelSelect');
+            if (select.value === '__custom__') {
+                select.value = 'gemini-2.0-flash';
+            }
+        };
+
+        // Add / Save Code Form Handler
+        document.getElementById('formAddCode').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('newCodeInput').value.trim();
+            let model = document.getElementById('newModelSelect').value;
+            const customVal = document.getElementById('newCustomModelInput').value.trim();
+            if ((model === '__custom__' || document.getElementById('customModelInputContainer').style.display !== 'none') && customVal) {
+                model = customVal;
+            }
+            if (!model || model === '__custom__') {
+                model = 'gemini-2.0-flash';
+            }
+            const keyInputs = document.querySelectorAll('.key-field');
+            const keys = Array.from(keyInputs).map(k => k.value.trim()).filter(Boolean);
+
+            if (!code || code.length < 3) return alert('Enter a valid 3 or 4-digit code');
+            if (keys.length === 0) return alert('Enter at least one Gemini API key');
+
+            showToast(`Saving code ${code}...`, '⏳');
+            try {
+                const configsArray = keys.map(k => ({
+                    mapValue: {
+                        fields: {
+                            apiKey: { stringValue: k },
+                            modelName: { stringValue: model },
+                            aiProvider: { stringValue: 'google' },
+                            customEndpoint: { stringValue: '' }
+                        }
+                    }
+                }));
+
+                const payload = {
+                    fields: {
+                        code: { stringValue: code },
+                        paused: { booleanValue: false },
+                        createdAt: { stringValue: new Date().toISOString() },
+                        configs: {
+                            arrayValue: { values: configsArray }
+                        },
+                        apiKeys: {
+                            arrayValue: { values: configsArray }
+                        }
+                    }
+                };
+
+                const url = `${FIRESTORE_BASE}/users/${encodeURIComponent(code)}?key=${FIRESTORE_API_KEY}`;
+                const res = await fetch(url, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    showToast(`Code ${code} saved with ${keys.length} key(s)!`, '✓');
+                    document.getElementById('newCodeInput').value = '';
+                    keyInputs.forEach((inp, idx) => { if (idx === 0) inp.value = ''; else inp.parentElement.remove(); });
+                    fetchCodes();
+                } else {
+                    showToast('Failed to save code', '✕');
+                }
+            } catch(err) {
+                showToast('Error: ' + err.message, '✕');
+            }
+        });
+
+        document.getElementById('btnRefreshCodes').addEventListener('click', fetchCodes);
+
+        // =========================================================================
+        // TAB 4: STATS & ANALYTICS
+        // =========================================================================
+        function updateStats() {
+            // Unique students
+            const uniqueRolls = new Set();
+            trackingData.forEach(d => {
+                const r = (d.rollNo || d.name || '').trim().toUpperCase();
+                if (r && r !== 'STUDENT') uniqueRolls.add(r);
+            });
+            document.getElementById('statUniqueStudents').textContent = uniqueRolls.size;
+
+            // Sessions
+            document.getElementById('statTotalSessions').textContent = trackingData.length;
+
+            // Installs
+            document.getElementById('statTotalInstalls').textContent = installsData.length;
+
+            // Active Codes
+            const activeCount = codesData.filter(c => !c.paused).length;
+            document.getElementById('statActiveCodes').textContent = `${activeCount} / ${codesData.length}`;
+
+            // Top Tests
+            const testCounts = {};
+            const testLatest = {};
+            trackingData.forEach(d => {
+                const t = (d.testName || 'General Exam').trim();
+                testCounts[t] = (testCounts[t] || 0) + 1;
+                if (!testLatest[t] || d.timestamp > testLatest[t]) {
+                    testLatest[t] = d.timestamp;
+                }
+            });
+
+            const sortedTests = Object.keys(testCounts)
+                .map(k => ({ name: k, count: testCounts[k], latest: testLatest[k] }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 10);
+
+            const tbodyTop = document.getElementById('tbodyTopTests');
+            if (sortedTests.length === 0) {
+                tbodyTop.innerHTML = `<tr><td colspan="3" class="empty-state">No test sessions recorded yet.</td></tr>`;
+            } else {
+                tbodyTop.innerHTML = sortedTests.map(t => `
+                    <tr>
+                        <td style="font-weight:600; color:#fff;">${escapeHtml(t.name)}</td>
+                        <td><span class="roll-badge" style="color:#10B981; background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.3);">${t.count} student${t.count > 1 ? 's' : ''}</span></td>
+                        <td style="font-size:0.78rem; color:var(--text-muted);">${t.latest ? new Date(t.latest).toLocaleString('en-IN') : '—'}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // XSS sanitization helper
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Boot
+        checkAuth();
+    </script>
+</body>
+</html>
