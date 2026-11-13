@@ -854,11 +854,13 @@
                             <div id="modelSelectContainer">
                                 <select class="form-select" id="newModelSelect" onchange="onModelSelectChange(this)">
                                     <option value="gemini-2.0-flash">gemini-2.0-flash (Recommended, Ultra-Fast)</option>
+                                    <option value="gemini-3.8-flash">gemini-3.8-flash (Latest Frontier Intelligent)</option>
+                                    <option value="gemini-3.6-flash">gemini-3.6-flash (Stable Balanced)</option>
+                                    <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Highest Velocity)</option>
+                                    <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                                    <option value="gemini-2.5-pro">gemini-2.5-pro (Deep Reasoning)</option>
                                     <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (Highest RPM)</option>
                                     <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-                                    <option value="gemini-1.5-pro">gemini-1.5-pro</option>
-                                    <option value="gemini-3.5-flash">gemini-3.5-flash</option>
-                                    <option value="gemini-3.6-flash">gemini-3.6-flash</option>
                                     <option value="__custom__">✎ Enter Custom Model Name...</option>
                                 </select>
                             </div>
@@ -915,6 +917,47 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Modal for Real-Time Model Editing -->
+            <div id="modalEditModel" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:16px;">
+                <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); width:100%; max-width:440px; padding:1.5rem; box-shadow:0 24px 48px rgba(0,0,0,0.6); color:#fff;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.75rem;">
+                        <div style="font-weight:700; font-size:1rem; display:flex; align-items:center; gap:8px;">
+                            <span>⚡ Change AI Model</span>
+                            <span id="modalCodeBadge" class="code-badge" style="font-size:0.9rem;">000</span>
+                        </div>
+                        <button type="button" class="btn-icon" onclick="closeEditModelModal()" style="font-size:1.1rem;">✕</button>
+                    </div>
+                    
+                    <div style="margin-bottom:1rem;">
+                        <label class="form-label" style="margin-bottom:6px;">Select New Gemini AI Model</label>
+                        <select class="form-select" id="modalModelSelect" onchange="onModalModelSelectChange(this)" style="width:100%;">
+                            <option value="gemini-2.0-flash">gemini-2.0-flash (Recommended, Ultra-Fast)</option>
+                            <option value="gemini-3.8-flash">gemini-3.8-flash (Latest Frontier Intelligent)</option>
+                            <option value="gemini-3.6-flash">gemini-3.6-flash (Stable Balanced)</option>
+                            <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Highest Velocity)</option>
+                            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                            <option value="gemini-2.5-pro">gemini-2.5-pro (Deep Reasoning)</option>
+                            <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (Highest RPM)</option>
+                            <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                            <option value="__custom__">✎ Enter Custom Model Name...</option>
+                        </select>
+                        
+                        <div id="modalCustomModelContainer" style="display:none; margin-top:8px;">
+                            <input type="text" class="form-input" id="modalCustomModelInput" placeholder="e.g. gemini-3.9-flash or custom model" style="font-family:'JetBrains Mono', monospace; width:100%;" />
+                        </div>
+                    </div>
+                    
+                    <div style="font-size:0.75rem; color:var(--text-muted); line-height:1.4; margin-bottom:1.25rem; background:rgba(56,189,248,0.06); padding:8px 12px; border-radius:6px; border:1px solid rgba(56,189,248,0.15);">
+                        ℹ️ <strong style="color:#38bdf8;">Real-Time Web Update:</strong> Students using this sync code will automatically transition to this new model on their next test query without needing to reload or update the Chrome extension.
+                    </div>
+                    
+                    <div style="display:flex; justify-content:flex-end; gap:8px;">
+                        <button type="button" class="btn-action" onclick="closeEditModelModal()" style="padding:7px 16px;">Cancel</button>
+                        <button type="button" class="btn-action primary" id="btnSaveModalModel" onclick="saveModalModel()" style="padding:7px 18px;">💾 Update Model Now</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1327,12 +1370,14 @@
                     const model = configs[0]?.mapValue?.fields?.modelName?.stringValue || 
                                   apiKeys[0]?.mapValue?.fields?.modelName?.stringValue || 
                                   'gemini-2.0-flash';
+                    const extractedKeys = (configs.length > 0 ? configs : apiKeys).map(item => item.mapValue?.fields?.apiKey?.stringValue || '').filter(Boolean);
 
                     return {
                         code,
                         paused,
                         keyCount: Math.max(keyCount, 1),
                         model,
+                        keys: extractedKeys,
                         modified: doc.updateTime || doc.createTime || ''
                     };
                 });
@@ -1362,9 +1407,17 @@
                         </span>
                     </td>
                     <td style="font-weight:600;">${c.keyCount} key${c.keyCount > 1 ? 's' : ''}</td>
-                    <td><span style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; color:#38BDF8;">${escapeHtml(c.model)}</span></td>
+                    <td>
+                        <div style="display:inline-flex; align-items:center; gap:6px;">
+                            <span style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; color:#38BDF8; font-weight:600;">${escapeHtml(c.model)}</span>
+                            <button class="btn-icon" style="padding:2px 6px; font-size:0.75rem; color:#38bdf8; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25);" title="Quick Change Model" onclick="openEditModelModal('${escapeHtml(c.code)}')">✏️ Change</button>
+                        </div>
+                    </td>
                     <td style="font-size:0.78rem; color:var(--text-muted);">${c.modified ? new Date(c.modified).toLocaleString('en-IN') : '—'}</td>
                     <td style="text-align:right;">
+                        <button class="btn-action" style="padding:4px 10px; font-size:0.78rem; display:inline-flex; margin-right:4px;" title="Load into form to edit keys or model" onclick="loadCodeIntoForm('${escapeHtml(c.code)}')">
+                            📝 Edit All
+                        </button>
                         <button class="btn-action ${c.paused ? 'primary' : 'danger'}" style="padding:4px 12px; font-size:0.78rem; display:inline-flex;" onclick="togglePauseCode('${escapeHtml(c.code)}', ${c.paused})">
                             ${c.paused ? '▶ Unpause Code' : '⏸ Pause Code'}
                         </button>
@@ -1373,6 +1426,181 @@
                 </tr>
             `).join('');
         }
+
+        // Real-Time Quick Model Modal Handlers
+        let activeEditCode = null;
+        window.openEditModelModal = function(code) {
+            activeEditCode = code;
+            const item = codesData.find(c => c.code === code);
+            const currentModel = item?.model || 'gemini-2.0-flash';
+            
+            document.getElementById('modalCodeBadge').textContent = code;
+            const select = document.getElementById('modalModelSelect');
+            const customDiv = document.getElementById('modalCustomModelContainer');
+            const customInput = document.getElementById('modalCustomModelInput');
+            
+            let matched = false;
+            for (let opt of select.options) {
+                if (opt.value === currentModel) {
+                    opt.selected = true;
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) {
+                select.value = '__custom__';
+                customDiv.style.display = 'block';
+                customInput.value = currentModel;
+            } else {
+                customDiv.style.display = 'none';
+                customInput.value = '';
+            }
+            
+            document.getElementById('modalEditModel').style.display = 'flex';
+        };
+
+        window.closeEditModelModal = function() {
+            document.getElementById('modalEditModel').style.display = 'none';
+            activeEditCode = null;
+        };
+
+        window.onModalModelSelectChange = function(select) {
+            const customDiv = document.getElementById('modalCustomModelContainer');
+            if (select.value === '__custom__') {
+                customDiv.style.display = 'block';
+                document.getElementById('modalCustomModelInput').focus();
+            } else {
+                customDiv.style.display = 'none';
+            }
+        };
+
+        window.saveModalModel = async function() {
+            if (!activeEditCode) return;
+            const code = activeEditCode;
+            const select = document.getElementById('modalModelSelect');
+            let chosenModel = select.value;
+            if (chosenModel === '__custom__') {
+                chosenModel = document.getElementById('modalCustomModelInput').value.trim();
+            }
+            if (!chosenModel) return alert('Please enter or select a valid model name');
+            
+            const btn = document.getElementById('btnSaveModalModel');
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+            showToast(`Updating model for code ${code} to ${chosenModel}...`, '⏳');
+            
+            try {
+                // Fetch document from Firestore to preserve existing keys
+                const docUrl = `${FIRESTORE_BASE}/users/${encodeURIComponent(code)}?key=${FIRESTORE_API_KEY}`;
+                const docRes = await fetch(docUrl);
+                if (!docRes.ok) throw new Error('Could not fetch existing document');
+                const docData = await docRes.json();
+                const f = docData.fields || {};
+                
+                const rawConfigs = f.configs?.arrayValue?.values || f.apiKeys?.arrayValue?.values || [];
+                const updatedConfigs = rawConfigs.map(item => {
+                    const mapFields = item.mapValue?.fields || {};
+                    return {
+                        mapValue: {
+                            fields: {
+                                ...mapFields,
+                                modelName: { stringValue: chosenModel },
+                                aiProvider: { stringValue: mapFields.aiProvider?.stringValue || 'google' },
+                                customEndpoint: { stringValue: mapFields.customEndpoint?.stringValue || '' }
+                            }
+                        }
+                    };
+                });
+                
+                if (updatedConfigs.length === 0) {
+                    updatedConfigs.push({
+                        mapValue: {
+                            fields: {
+                                apiKey: { stringValue: '' },
+                                modelName: { stringValue: chosenModel },
+                                aiProvider: { stringValue: 'google' },
+                                customEndpoint: { stringValue: '' }
+                            }
+                        }
+                    });
+                }
+                
+                const patchUrl = `${FIRESTORE_BASE}/users/${encodeURIComponent(code)}?updateMask.fieldPaths=configs&updateMask.fieldPaths=apiKeys&key=${FIRESTORE_API_KEY}`;
+                const patchRes = await fetch(patchUrl, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fields: {
+                            configs: { arrayValue: { values: updatedConfigs } },
+                            apiKeys: { arrayValue: { values: updatedConfigs } }
+                        }
+                    })
+                });
+                
+                if (patchRes.ok) {
+                    showToast(`✓ Model for code ${code} updated to ${chosenModel}!`, '✓');
+                    closeEditModelModal();
+                    fetchCodes();
+                } else {
+                    showToast('Failed to update model in Firestore', '✕');
+                }
+            } catch(e) {
+                showToast('Error: ' + e.message, '✕');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💾 Update Model Now';
+            }
+        };
+
+        // Load full code details into the top form for comprehensive editing
+        window.loadCodeIntoForm = function(code) {
+            const item = codesData.find(c => c.code === code);
+            if (!item) return;
+            
+            document.getElementById('newCodeInput').value = code;
+            
+            // Set model in form dropdown
+            const select = document.getElementById('newModelSelect');
+            const customDiv = document.getElementById('customModelInputContainer');
+            const customInput = document.getElementById('newCustomModelInput');
+            
+            let matched = false;
+            for (let opt of select.options) {
+                if (opt.value === item.model) {
+                    opt.selected = true;
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) {
+                select.value = '__custom__';
+                customDiv.style.display = 'block';
+                customInput.value = item.model;
+            } else {
+                customDiv.style.display = 'none';
+                customInput.value = '';
+            }
+            
+            // Populate keys
+            const container = document.getElementById('apiKeyInputsContainer');
+            container.innerHTML = '';
+            const keysToLoad = (item.keys && item.keys.length > 0) ? item.keys : [''];
+            
+            keysToLoad.forEach((k, idx) => {
+                const row = document.createElement('div');
+                row.className = 'key-input-row';
+                row.innerHTML = `
+                    <input type="text" class="form-input key-field" placeholder="AIzaSy..." value="${escapeHtml(k)}" required style="font-family:'JetBrains Mono', monospace;" />
+                    ${idx === 0 ? '<button type="button" class="btn-action" style="padding: 6px 12px;" disabled>Primary</button>' : '<button type="button" class="btn-action danger" style="padding: 6px 10px;" onclick="this.parentElement.remove()">✕</button>'}
+                `;
+                container.appendChild(row);
+            });
+            
+            const submitBtn = document.getElementById('btnSaveCode');
+            submitBtn.textContent = `💾 Update Code ${code} & Model`;
+            document.getElementById('formAddCode').scrollIntoView({ behavior: 'smooth' });
+            showToast(`Loaded code ${code} into form. Make your edits and click Update.`, 'ℹ️');
+        };
 
         // Real-Time Pause / Unpause Toggle
         async function togglePauseCode(code, currentPaused) {
