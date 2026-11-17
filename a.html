@@ -1156,17 +1156,20 @@
                 trackingData = (data.documents || []).map(doc => {
                     const f = doc.fields || {};
                     const id = doc.name.split('/').pop();
+                    const rawName = (f.name?.stringValue || 'Unknown Student').replace(/\$/g, ' ').trim();
                     return {
                         docId: id,
-                        rollNo: f.rollNo?.stringValue || '',
-                        name: f.name?.stringValue || 'Unknown Student',
+                        rollNo: (f.rollNo?.stringValue || '').trim().toUpperCase(),
+                        name: rawName,
+                        email: (f.email?.stringValue || '').trim().toLowerCase(),
                         dept: f.dept?.stringValue || f.degree?.stringValue || '',
                         batch: f.batch?.stringValue || '',
                         testName: f.testName?.stringValue || 'Exam Session',
                         loginTime: f.loginTime?.stringValue || '',
                         code: f.code?.stringValue || '000',
                         timestamp: parseInt(f.timestamp?.integerValue || 0, 10),
-                        url: f.url?.stringValue || ''
+                        url: f.url?.stringValue || '',
+                        platform: f.platform?.stringValue || 'PAT Portal'
                     };
                 });
 
@@ -1190,11 +1193,14 @@
             tbody.innerHTML = items.map(item => `
                 <tr>
                     <td><span class="roll-badge">${escapeHtml(item.rollNo || 'N/A')}</span></td>
-                    <td style="font-weight:600; color:#fff;">${escapeHtml(item.name)}</td>
+                    <td>
+                        <div style="font-weight:600; color:#fff; font-size:0.92rem;">${escapeHtml(item.name)}</div>
+                        ${item.email ? `<div style="font-size:0.73rem; color:var(--text-muted); margin-top:2px; display:flex; align-items:center; gap:4px;"><span style="opacity:0.7;">✉</span>${escapeHtml(item.email)}</div>` : ''}
+                    </td>
                     <td>${escapeHtml(item.dept || 'Engineering')}</td>
                     <td>${escapeHtml(item.batch || '—')}</td>
                     <td style="max-width:280px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(item.testName)}">
-                        ${escapeHtml(item.testName)}
+                        <span style="font-weight:500;">${escapeHtml(item.testName)}</span>
                     </td>
                     <td style="font-size:0.78rem; color:var(--text-muted);">${escapeHtml(item.loginTime)}</td>
                     <td><span class="code-badge">${escapeHtml(item.code)}</span></td>
@@ -1211,6 +1217,7 @@
             const filtered = trackingData.filter(item => 
                 (item.rollNo || '').toLowerCase().includes(q) ||
                 (item.name || '').toLowerCase().includes(q) ||
+                (item.email || '').toLowerCase().includes(q) ||
                 (item.dept || '').toLowerCase().includes(q) ||
                 (item.testName || '').toLowerCase().includes(q) ||
                 (item.code || '').toLowerCase().includes(q)
